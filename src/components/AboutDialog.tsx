@@ -1,7 +1,6 @@
 import React from 'react';
 import { TitleBar } from './TitleBar';
 import { retroSound } from '../utils/audio';
-import { Zap } from 'lucide-react';
 
 interface AboutDialogProps {
   onClose: () => void;
@@ -35,7 +34,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({ onClose }) => {
               <strong>📊 Master Sheet:</strong> Excel 97 / Google Sheets compatible TSV clipboard export & direct CSV download.
             </p>
             <p>
-              <strong>🔑 Admin Passcode:</strong> <code>oorja@12344321</code>
+              <strong>🔒 Protected:</strong> Administrative panel access is restricted to authorized faculty and club leads.
             </p>
           </div>
 

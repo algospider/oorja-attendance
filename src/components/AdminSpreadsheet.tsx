@@ -59,7 +59,6 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [manualName, setManualName] = useState('');
   const [manualRoll, setManualRoll] = useState('');
-  const [manualWing, setManualWing] = useState('Power Systems');
 
   // Session Settings State
   const [sessionForm, setSessionForm] = useState({
@@ -212,8 +211,8 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: manualName.trim(),
-          rollNo: manualRoll.trim(),
-          notes: `Admin Manual Entry - ${manualWing}`,
+          rollNo: manualRoll.trim().toUpperCase(),
+          notes: 'Admin Manual Entry',
         }),
       });
       if (res.ok) {
@@ -330,9 +329,6 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
                   className="w-full px-2 py-2 outline-none text-sm font-mono tracking-wider"
                 />
               </div>
-              <p className="text-[10px] text-gray-600 mt-1">
-                Security key: <code>oorja@12344321</code>
-              </p>
             </div>
 
             <div className="flex items-center justify-between pt-2">
@@ -609,7 +605,7 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
                     <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-gray-900 bg-[#dfdfdf]">STUDENT NAME</th>
                     <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-gray-700 bg-[#dfdfdf]">TIME</th>
                     <th className="border-r border-b border-gray-400 px-2 py-1 text-center font-bold text-gray-700 bg-[#dfdfdf]">STATUS</th>
-                    <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-gray-700 bg-[#dfdfdf]">REMARKS / WING</th>
+                    <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-gray-700 bg-[#dfdfdf]">REMARKS / NOTES</th>
                     <th className="border-b border-gray-400 px-2 py-1 text-center font-bold text-gray-700 bg-[#dfdfdf]">DEL</th>
                   </tr>
                 </thead>
@@ -818,15 +814,15 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-black mb-1">ROLL NUMBER:</label>
+                <label className="block font-bold text-black mb-1">ROLL NUMBER (BTECH/15XXX/2X):</label>
                 <div className="win-inset p-1 bg-white">
                   <input
                     type="text"
                     value={manualRoll}
-                    onChange={(e) => setManualRoll(e.target.value)}
+                    onChange={(e) => setManualRoll(e.target.value.toUpperCase())}
                     required
-                    placeholder="e.g. 23EE199"
-                    className="w-full px-2 py-1 text-xs uppercase outline-none bg-transparent"
+                    placeholder="e.g. BTECH/15001/23"
+                    className="w-full px-2 py-1 text-xs uppercase outline-none bg-transparent font-mono"
                   />
                 </div>
               </div>

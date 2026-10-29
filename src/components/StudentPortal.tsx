@@ -6,14 +6,11 @@ import {
   Copy,
   Check,
   AlertTriangle,
-  ShieldCheck,
   Zap,
   Activity,
-  Flame,
   Radio,
   User,
   Hash,
-  Share2
 } from 'lucide-react';
 
 interface StudentPortalProps {
@@ -31,8 +28,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [rollNo, setRollNo] = useState('');
-  const [wing, setWing] = useState('Power Systems');
-  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
@@ -45,14 +40,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     retroSound.playClick();
     setErrorMsg(null);
 
-    if (!name.trim()) {
+    const cleanName = name.trim();
+    const cleanRollNo = rollNo.trim().toUpperCase();
+
+    if (!cleanName) {
       retroSound.playError();
-      setErrorMsg('Error: Student Name cannot be empty.');
+      setErrorMsg('Error: Student Full Name is required.');
       return;
     }
-    if (!rollNo.trim()) {
+    if (!cleanRollNo) {
       retroSound.playError();
-      setErrorMsg('Error: Roll Number / Student ID is required.');
+      setErrorMsg('Error: Roll Number is required (Format: BTECH/15XXX/2X).');
       return;
     }
 
@@ -63,9 +61,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
-          rollNo: rollNo.trim(),
-          notes: `${wing}${notes ? ` - ${notes}` : ''}`,
+          name: cleanName,
+          rollNo: cleanRollNo,
+          notes: 'Inducted Member',
         }),
       });
 
@@ -104,12 +102,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     setIsDuplicate(false);
     setName('');
     setRollNo('');
-    setNotes('');
   };
 
   return (
     <div className="p-2 sm:p-4 text-black">
-      {/* High Voltage Danger Hazard Ribbon */}
+      {/* High Voltage Hazard Ribbon */}
       <div className="h-2 w-full hazard-tape mb-2 rounded-none"></div>
 
       {/* Retro Electrical Club Header */}
@@ -138,7 +135,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
         </div>
 
-        {/* Live Grid Metrics - Mobile Grid */}
+        {/* Live Grid Metrics */}
         <div className="grid grid-cols-3 gap-1.5 text-center font-mono text-[10px] sm:text-xs mb-2">
           <div className="win-inset py-1 px-1 bg-black text-yellow-400 font-bold">
             <span className="text-[9px] text-gray-400 block">VOLTAGE</span>
@@ -167,7 +164,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       {/* Main Container */}
       {!receipt ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* Left Column: Mobile-First Form */}
+          {/* Left Column: Form */}
           <div className="lg:col-span-2 win-box p-3 bg-[#c0c0c0]">
             <div className="border-b-2 border-white pb-1.5 mb-3 flex items-center justify-between">
               <h2 className="font-bold text-xs sm:text-sm text-[#000080] flex items-center gap-1.5 uppercase font-mono">
@@ -224,47 +221,34 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </div>
               </div>
 
-              {/* Roll No Field */}
+              {/* Roll No Field (Format: BTECH/15XXX/2X) */}
               <div>
-                <label className="block font-bold text-black mb-1 flex items-center gap-1 text-xs sm:text-sm">
-                  <Hash className="w-3.5 h-3.5 text-blue-900" />
-                  ROLL NUMBER / STUDENT ID: <span className="text-red-600">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-black flex items-center gap-1 text-xs sm:text-sm">
+                    <Hash className="w-3.5 h-3.5 text-blue-900" />
+                    ROLL NUMBER: <span className="text-red-600">*</span>
+                  </label>
+                  <span className="text-[10px] text-blue-900 bg-blue-100 px-1.5 py-0.2 border border-blue-300 font-bold">
+                    FORMAT: BTECH/15XXX/2X
+                  </span>
+                </div>
                 <div className="win-inset p-1 bg-white">
                   <input
                     type="text"
                     value={rollNo}
-                    onChange={(e) => setRollNo(e.target.value)}
-                    placeholder="e.g. 23EE101 or CS-2024-042"
+                    onChange={(e) => setRollNo(e.target.value.toUpperCase())}
+                    placeholder="e.g. BTECH/15042/23"
                     required
                     disabled={session ? !session.sessionActive : false}
                     className="w-full px-2 py-2 text-sm font-mono uppercase tracking-wider outline-none bg-transparent"
                   />
                 </div>
+                <p className="text-[10px] text-gray-600 mt-1">
+                  Enter in official university format (e.g. <code>BTECH/15001/23</code> or <code>BTECH/15102/24</code>)
+                </p>
               </div>
 
-              {/* Wing / Domain Selector */}
-              <div>
-                <label className="block font-bold text-black mb-1 text-xs">
-                  ⚡ DOMAIN / SPECIALIZATION:
-                </label>
-                <div className="win-inset p-1 bg-white">
-                  <select
-                    value={wing}
-                    onChange={(e) => setWing(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs font-mono outline-none bg-transparent cursor-pointer"
-                  >
-                    <option value="Power Systems & Grid">Power Systems & Smart Grid</option>
-                    <option value="EV & Energy Storage">Electric Vehicles & Battery Tech</option>
-                    <option value="Robotics & Embedded Systems">Robotics & Embedded Systems</option>
-                    <option value="Renewable & Solar Energy">Renewable & Solar Energy</option>
-                    <option value="VLSI & Microelectronics">VLSI & Microelectronics</option>
-                    <option value="General Electrical / Other">General Electrical & Allied Branches</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Submit Button - Phone Touch Optimized */}
+              {/* Submit Button */}
               <div className="pt-2">
                 <button
                   type="submit"
@@ -303,8 +287,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   INSTRUCTIONS FOR ATTENDEES:
                 </p>
                 <ul className="space-y-1 text-gray-700 list-disc list-inside">
-                  <li>Ensure your Roll Number is correct for official certificates.</li>
-                  <li>Clicking submit immediately creates your <strong>Oorja Induction Pass</strong>.</li>
+                  <li>Enter your official Roll No as <strong>BTECH/15XXX/2X</strong>.</li>
+                  <li>Clicking submit generates your official <strong>Oorja Induction Pass</strong>.</li>
                   <li>Use the Google Meet link unlocked on the next screen to join the live address.</li>
                 </ul>
               </div>
@@ -387,9 +371,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             )}
           </div>
 
-          {/* Phone-Optimized Oorja Induction Pass */}
+          {/* Oorja Induction Pass */}
           <div className="max-w-md mx-auto win-inset p-3 sm:p-4 bg-[#ffffea] border-2 border-dashed border-yellow-700 font-mono text-xs shadow-md">
-            {/* Ticket Header */}
             <div className="text-center border-b border-gray-400 pb-2 mb-2">
               <div className="flex items-center justify-center gap-1 text-black font-extrabold text-xs sm:text-sm tracking-wider">
                 <span>⚡</span>
@@ -399,7 +382,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <p className="text-[9px] text-gray-600">ELECTRICAL ENGINEERING SOCIETY // INAUGURAL SESSION</p>
             </div>
 
-            {/* Ticket Details */}
             <div className="space-y-1.5 text-gray-800 text-[11px]">
               <div className="flex justify-between border-b border-gray-200 pb-1">
                 <span className="text-gray-500">PASS ID:</span>
@@ -423,7 +405,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </div>
             </div>
 
-            {/* Retro Barcode effect */}
             <div className="mt-3 pt-2 border-t border-gray-400 text-center">
               <div className="font-mono tracking-widest text-sm text-black font-bold select-none h-6 flex justify-center items-center">
                 ||| | |||| | ||||| || | ||| |||| | ||| | ||||

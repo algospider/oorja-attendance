@@ -37,41 +37,41 @@ const initialDb = {
     {
       id: 'OORJA-001',
       name: 'Rohan Sharma',
-      rollNo: '23EE101',
+      rollNo: 'BTECH/15001/23',
       timestamp: new Date(Date.now() - 3600000 * 1.5).toISOString(),
       status: 'Present',
-      device: 'Android Mobile',
-      notes: 'Power Systems Wing',
+      device: 'Android Phone',
+      notes: 'Inducted Member',
       sessionTitle: '⚡ OORJA CLUB INAUGURATION 2026'
     },
     {
       id: 'OORJA-002',
       name: 'Priya Verma',
-      rollNo: '23EE142',
+      rollNo: 'BTECH/15014/23',
       timestamp: new Date(Date.now() - 3600000 * 1.2).toISOString(),
       status: 'Present',
-      device: 'iPhone / Safari',
-      notes: 'Robotics & Embedded Lead',
+      device: 'iPhone / iOS',
+      notes: 'Inducted Member',
       sessionTitle: '⚡ OORJA CLUB INAUGURATION 2026'
     },
     {
       id: 'OORJA-003',
       name: 'Aarav Patel',
-      rollNo: '23EE118',
+      rollNo: 'BTECH/15023/24',
       timestamp: new Date(Date.now() - 3600000 * 0.8).toISOString(),
       status: 'Present',
       device: 'MacBook Air',
-      notes: 'EV & High Voltage Cell',
+      notes: 'Inducted Member',
       sessionTitle: '⚡ OORJA CLUB INAUGURATION 2026'
     },
     {
       id: 'OORJA-004',
       name: 'Sneha Kulkarni',
-      rollNo: '23EE156',
+      rollNo: 'BTECH/15045/24',
       timestamp: new Date(Date.now() - 1800000).toISOString(),
       status: 'Late',
       device: 'Windows Mobile',
-      notes: 'Joined via campus cellular',
+      notes: 'Inducted Member',
       sessionTitle: '⚡ OORJA CLUB INAUGURATION 2026'
     }
   ]

@@ -5,59 +5,59 @@
     "instructor": "Club Oorja Executive Board & Faculty Advisor",
     "sessionActive": true,
     "requireRollPrefix": false,
-    "customNotice": "⚡ HIGH VOLTAGE: Welcome to CLUB OORJA Inauguration! Submit your Name & Roll No to generate your Official Induction Pass and access the meeting.",
+    "customNotice": "⚡ HIGH VOLTAGE: Welcome to CLUB OORJA Inauguration! Submit your Name & Roll No (BTECH/15XXX/2X) to generate your Official Induction Pass and access the meeting.",
     "adminPassword": "oorja@12344321",
     "autoRedirectDelay": 5
   },
   "attendees": [
     {
-      "id": "OORJA-481",
-      "name": "Nikola Tesla",
-      "rollNo": "23EE999",
-      "timestamp": "2026-10-29T17:59:25.300Z",
+      "id": "OORJA-799",
+      "name": "Aditya Verma",
+      "rollNo": "BTECH/15088/24",
+      "timestamp": "2026-10-29T18:12:56.922Z",
       "status": "Present",
       "device": "Desktop",
-      "notes": "AC High Voltage Wing",
+      "notes": "Club Member",
       "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026 // Keynote & Induction Session"
     },
     {
       "id": "OORJA-001",
       "name": "Rohan Sharma",
-      "rollNo": "23EE101",
+      "rollNo": "BTECH/15001/23",
       "timestamp": "2026-10-29T16:15:00.000Z",
       "status": "Present",
       "device": "Android Phone",
-      "notes": "Power Systems Wing",
+      "notes": "Inducted Member",
       "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
     },
     {
       "id": "OORJA-002",
       "name": "Priya Verma",
-      "rollNo": "23EE142",
+      "rollNo": "BTECH/15014/23",
       "timestamp": "2026-10-29T16:30:00.000Z",
       "status": "Present",
       "device": "iPhone / iOS",
-      "notes": "Robotics & Embedded Lead",
+      "notes": "Inducted Member",
       "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
     },
     {
       "id": "OORJA-003",
       "name": "Aarav Patel",
-      "rollNo": "23EE118",
+      "rollNo": "BTECH/15023/24",
       "timestamp": "2026-10-29T16:55:00.000Z",
       "status": "Present",
       "device": "MacBook Air",
-      "notes": "EV & High Voltage Cell",
+      "notes": "Inducted Member",
       "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
     },
     {
       "id": "OORJA-004",
       "name": "Sneha Kulkarni",
-      "rollNo": "23EE156",
+      "rollNo": "BTECH/15045/24",
       "timestamp": "2026-10-29T17:15:00.000Z",
       "status": "Late",
       "device": "Mobile Browser",
-      "notes": "Campus cellular check-in",
+      "notes": "Inducted Member",
       "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
     }
   ]
