@@ -1,0 +1,64 @@
+{
+  "config": {
+    "meetingLink": "https://meet.google.com/oorja-inauguration-2026",
+    "meetingTitle": "⚡ OORJA CLUB INAUGURATION 2026 // Keynote & Induction Session",
+    "instructor": "Club Oorja Executive Board & Faculty Advisor",
+    "sessionActive": true,
+    "requireRollPrefix": false,
+    "customNotice": "⚡ HIGH VOLTAGE: Welcome to CLUB OORJA Inauguration! Submit your Name & Roll No to generate your Official Induction Pass and access the meeting.",
+    "adminPassword": "oorja@12344321",
+    "autoRedirectDelay": 5
+  },
+  "attendees": [
+    {
+      "id": "OORJA-481",
+      "name": "Nikola Tesla",
+      "rollNo": "23EE999",
+      "timestamp": "2026-10-29T17:59:25.300Z",
+      "status": "Present",
+      "device": "Desktop",
+      "notes": "AC High Voltage Wing",
+      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026 // Keynote & Induction Session"
+    },
+    {
+      "id": "OORJA-001",
+      "name": "Rohan Sharma",
+      "rollNo": "23EE101",
+      "timestamp": "2026-10-29T16:15:00.000Z",
+      "status": "Present",
+      "device": "Android Phone",
+      "notes": "Power Systems Wing",
+      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
+    },
+    {
+      "id": "OORJA-002",
+      "name": "Priya Verma",
+      "rollNo": "23EE142",
+      "timestamp": "2026-10-29T16:30:00.000Z",
+      "status": "Present",
+      "device": "iPhone / iOS",
+      "notes": "Robotics & Embedded Lead",
+      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
+    },
+    {
+      "id": "OORJA-003",
+      "name": "Aarav Patel",
+      "rollNo": "23EE118",
+      "timestamp": "2026-10-29T16:55:00.000Z",
+      "status": "Present",
+      "device": "MacBook Air",
+      "notes": "EV & High Voltage Cell",
+      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
+    },
+    {
+      "id": "OORJA-004",
+      "name": "Sneha Kulkarni",
+      "rollNo": "23EE156",
+      "timestamp": "2026-10-29T17:15:00.000Z",
+      "status": "Late",
+      "device": "Mobile Browser",
+      "notes": "Campus cellular check-in",
+      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
+    }
+  ]
+}

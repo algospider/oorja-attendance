@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Industrial Substation Windows 95 Bevel */
+  .win-box {
+    background-color: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #000000;
+    border-bottom: 2px solid #000000;
+    box-shadow: inset 1px 1px 0px #dfdfdf, inset -1px -1px 0px #808080;
+  }
+
+  .win-box-dark {
+    background-color: #1a2233;
+    border-top: 2px solid #3b4966;
+    border-left: 2px solid #3b4966;
+    border-right: 2px solid #000000;
+    border-bottom: 2px solid #000000;
+    box-shadow: inset 1px 1px 0px #2a364f, inset -1px -1px 0px #090d14;
+  }
+
+  /* Sunken Inset Terminal */
+  .win-inset {
+    background-color: #ffffff;
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    box-shadow: inset 1px 1px 0px #000000, inset -1px -1px 0px #dfdfdf;
+  }
+
+  .win-inset-dark {
+    background-color: #0b0f19;
+    border-top: 2px solid #000000;
+    border-left: 2px solid #000000;
+    border-right: 2px solid #374151;
+    border-bottom: 2px solid #374151;
+  }
+
+  /* Beveled Tactile Buttons */
+  .win-btn {
+    background-color: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #000000;
+    border-bottom: 2px solid #000000;
+    box-shadow: inset 1px 1px 0px #dfdfdf, inset -1px -1px 0px #808080;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "MS Sans Serif", sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .win-btn:active, .win-btn-active {
+    border-top: 2px solid #000000;
+    border-left: 2px solid #000000;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    box-shadow: inset 1px 1px 0px #808080, inset -1px -1px 0px #dfdfdf;
+    transform: translateY(1px);
+  }
+
+  /* Electrical Hazard Danger Tape */
+  .hazard-tape {
+    background: repeating-linear-gradient(
+      -45deg,
+      #ffcc00,
+      #ffcc00 12px,
+      #111111 12px,
+      #111111 24px
+    );
+  }
+
+  /* CRT Scanlines */
+  .crt-scanlines {
+    background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%, 
+      rgba(0, 0, 0, 0.22) 50%
+    ), linear-gradient(
+      90deg,
+      rgba(255, 204, 0, 0.02),
+      rgba(0, 240, 255, 0.02),
+      rgba(255, 0, 0, 0.01)
+    );
+    background-size: 100% 3px, 6px 100%;
+    pointer-events: none;
+  }
+
+  /* High Voltage Circuit Grid Background */
+  .bg-oorja-circuit {
+    background-color: #0b1320;
+    background-image: 
+      linear-gradient(rgba(0, 240, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.07) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #dfdfdf;
+}
+::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+}
+
+/* Marquee */
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.marquee-content {
+  display: inline-block;
+  padding-left: 100%;
+  animation: marquee 22s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-100%, 0); }
+}
+
+/* Electric Glow Pulse */
+@keyframes electric-pulse {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 4px #ffcc00); }
+  50% { opacity: 0.85; filter: drop-shadow(0 0 10px #ffcc00); }
+}
+
+.electric-glow {
+  animation: electric-pulse 2s infinite ease-in-out;
+}
