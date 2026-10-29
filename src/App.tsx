@@ -130,8 +130,8 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Electrical Badges & Live Meter */}
-        <RetroBadges />
+        {/* Electrical Badges & Live Meter (Shown on Admin View to keep user form 100% clean) */}
+        {activeView === 'admin' && <RetroBadges />}
       </main>
 
       {/* About Modal */}

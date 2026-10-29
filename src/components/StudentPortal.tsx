@@ -5,15 +5,12 @@ import {
   ExternalLink,
   Copy,
   Check,
-  AlertTriangle,
   Zap,
-  Activity,
-  Radio,
+  Calendar,
   User,
   Hash,
   Clock,
-  Calendar,
-  CheckCircle2,
+  Lock,
 } from 'lucide-react';
 
 interface StudentPortalProps {
@@ -57,22 +54,22 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
     if (!cleanName) {
       retroSound.playError();
-      setErrorMsg('Error: Student Full Name is required.');
+      setErrorMsg('Please enter your Full Name.');
       return;
     }
     if (!cleanRollNo) {
       retroSound.playError();
-      setErrorMsg('Error: Roll Number is required (Format: BTECH/15XXX/2X).');
+      setErrorMsg('Please enter your Roll Number (Format: BTECH/15XXX/2X).');
       return;
     }
     if (!currentChosenSession) {
       retroSound.playError();
-      setErrorMsg('Error: Please select a session.');
+      setErrorMsg('Please select a session.');
       return;
     }
     if (!currentChosenSession.active) {
       retroSound.playError();
-      setErrorMsg(`Error: [${currentChosenSession.title}] is currently locked by the admin.`);
+      setErrorMsg(`[${currentChosenSession.title}] is currently locked by admin.`);
       return;
     }
 
@@ -104,7 +101,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       retroSound.playSuccess();
     } catch (err: unknown) {
       retroSound.playError();
-      const message = err instanceof Error ? err.message : 'Connection error to Oorja Power Substation.';
+      const message = err instanceof Error ? err.message : 'Connection failed. Please retry.';
       setErrorMsg(message);
     } finally {
       setSubmitting(false);
@@ -130,390 +127,268 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   };
 
   return (
-    <div className="p-2 sm:p-4 text-black font-sans">
-      {/* High Voltage Hazard Ribbon */}
-      <div className="h-2 w-full hazard-tape mb-2 rounded-none"></div>
-
-      {/* Retro Electrical Club Header */}
-      <div className="win-box p-3 mb-3 bg-[#ffffeb] border border-yellow-600 shadow-sm">
-        <div className="flex items-center gap-2.5 pb-2 mb-2 border-b border-black/30">
-          <div className="w-10 h-10 bg-black flex items-center justify-center shrink-0 border border-yellow-400">
-            <Zap className="w-6 h-6 text-yellow-400 fill-yellow-400 animate-pulse" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-red-600 text-white font-mono text-[9px] font-bold px-1.5 py-0.2 tracking-wider">
-                ⚡ 440V HIGH VOLTAGE
-              </span>
-              <span className="bg-blue-900 text-yellow-300 font-mono text-[9px] font-bold px-1.5 py-0.2">
-                INAUGURATION 2026
-              </span>
-            </div>
-
-            <h1 className="font-extrabold text-xs sm:text-base tracking-wide uppercase font-pixel text-[#000080] truncate mt-0.5">
-              CLUB OORJA // ELECTRICAL SOCIETY
-            </h1>
-            <p className="text-[11px] text-gray-700 font-mono truncate">
-              Select your Session & Enter Roll No to receive the specific Google Meet link.
-            </p>
-          </div>
+    <div className="p-3 sm:p-5 text-black font-sans max-w-xl mx-auto">
+      {/* Clean, Simple Club Header */}
+      <div className="text-center pb-3 mb-3 border-b border-gray-400">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#000080] text-yellow-300 font-bold text-xs font-mono uppercase mb-1">
+          <Zap className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+          <span>CLUB OORJA // INAUGURATION 2026</span>
         </div>
-
-        {/* Live Grid Metrics */}
-        <div className="grid grid-cols-3 gap-1.5 text-center font-mono text-[10px] sm:text-xs mb-2">
-          <div className="win-inset py-1 px-1 bg-black text-yellow-400 font-bold">
-            <span className="text-[9px] text-gray-400 block">SESSIONS</span>
-            <span>{availableSessions.length} SCHEDULED</span>
-          </div>
-          <div className="win-inset py-1 px-1 bg-black text-cyan-400 font-bold">
-            <span className="text-[9px] text-gray-400 block">FREQUENCY</span>
-            <span>50.0 Hz</span>
-          </div>
-          <div className="win-inset py-1 px-1 bg-black text-emerald-400 font-bold">
-            <span className="text-[9px] text-gray-400 block">ATTENDEES</span>
-            <span>{session?.totalAttendees ?? 0} LOGGED</span>
-          </div>
-        </div>
-
-        {/* Retro Scrolling Bulletin Ticker */}
-        <div className="marquee-container bg-black text-yellow-300 font-mono text-xs py-1 px-2 border border-yellow-500">
-          <div className="marquee-content font-bold flex items-center gap-2">
-            <span>⚡ INAUGURATION NOTICE:</span>
-            <span>{session?.customNotice || 'Welcome to Club Oorja! Select which session you are joining and enter your Name & Roll No.'}</span>
-          </div>
-        </div>
+        <h1 className="text-base sm:text-lg font-bold text-gray-900 leading-tight">
+          Student Attendance & Session Access
+        </h1>
+        <p className="text-xs text-gray-600 mt-0.5 font-sans">
+          Select your session, enter your Name & Roll No to join the Google Meet.
+        </p>
       </div>
 
-      {/* Main Container */}
+      {/* Main Content: Form or Link Result */}
       {!receipt ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* Left Column: Form & Session Selector */}
-          <div className="lg:col-span-2 win-box p-3 bg-[#c0c0c0]">
-            <div className="border-b-2 border-white pb-1.5 mb-3 flex items-center justify-between">
-              <h2 className="font-bold text-xs sm:text-sm text-[#000080] flex items-center gap-1.5 uppercase font-mono">
-                <Radio className="w-4 h-4 text-red-600 animate-ping" />
-                <span>STEP 1: SELECT SESSION & ENTER DETAILS</span>
-              </h2>
-              <span className="text-[10px] font-mono bg-yellow-200 text-black px-1.5 py-0.5 border border-black font-bold">
-                GRID #2026
-              </span>
+        <div className="win-box p-3 sm:p-4 bg-[#c0c0c0] shadow-sm">
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="mb-3 p-2 bg-yellow-100 border-2 border-red-600 text-red-900 text-xs font-mono flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{errorMsg}</span>
             </div>
+          )}
 
-            {/* Error Message */}
-            {errorMsg && (
-              <div className="mb-3 p-2 bg-yellow-100 border-2 border-red-600 text-red-900 text-xs font-mono flex items-center gap-2">
-                <span className="text-base">⚠️</span>
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-3 font-mono text-xs">
-              {/* SESSION SELECTOR (TOUCH CARDS ON MOBILE) */}
-              <div>
-                <label className="block font-bold text-black mb-1.5 text-xs sm:text-sm flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-blue-900" />
-                  CHOOSE WHICH SESSION YOU ARE JOINING: <span className="text-red-600">*</span>
-                </label>
-
-                <div className="space-y-1.5">
-                  {availableSessions.map((s) => {
-                    const isSelected = (selectedSessionId || availableSessions[0]?.id) === s.id;
-                    return (
-                      <div
-                        key={s.id}
-                        onClick={() => {
-                          if (s.active) {
-                            retroSound.playClick();
-                            setSelectedSessionId(s.id);
-                          }
-                        }}
-                        className={`p-2.5 win-box border-2 cursor-pointer transition-all select-none ${
-                          isSelected
-                            ? 'bg-[#ffffd0] border-[#000080] shadow-md ring-1 ring-[#000080]'
-                            : s.active
-                            ? 'bg-white border-gray-400 hover:bg-gray-50'
-                            : 'bg-gray-200 border-gray-400 opacity-60 cursor-not-allowed'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2">
-                            <input
-                              type="radio"
-                              name="sessionOption"
-                              checked={isSelected}
-                              onChange={() => s.active && setSelectedSessionId(s.id)}
-                              disabled={!s.active}
-                              className="mt-0.5 w-4 h-4 text-blue-900 cursor-pointer"
-                            />
-                            <div>
-                              <strong className="block font-bold text-xs sm:text-sm text-gray-900 leading-snug">
-                                {s.title}
-                              </strong>
-                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-600 font-sans">
-                                <span className="flex items-center gap-0.5">
-                                  <Clock className="w-3 h-3 text-blue-700" /> {s.time}
-                                </span>
-                                {s.speaker && (
-                                  <span>• Host: <strong>{s.speaker}</strong></span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <span
-                            className={`px-1.5 py-0.5 text-[9px] font-bold uppercase shrink-0 ${
-                              s.active
-                                ? 'bg-green-100 text-green-800 border border-green-500'
-                                : 'bg-red-100 text-red-800 border border-red-500'
-                            }`}
-                          >
-                            {s.active ? '● OPEN' : '○ LOCKED'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Name Field */}
-              <div>
-                <label className="block font-bold text-black mb-1 flex items-center gap-1 text-xs sm:text-sm">
-                  <User className="w-3.5 h-3.5 text-blue-900" />
-                  STUDENT FULL NAME: <span className="text-red-600">*</span>
-                </label>
-                <div className="win-inset p-1 bg-white">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Rohan Sharma"
-                    required
-                    className="w-full px-2 py-2 text-sm font-sans outline-none bg-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Roll No Field (Format: BTECH/15XXX/2X) */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-black flex items-center gap-1 text-xs sm:text-sm">
-                    <Hash className="w-3.5 h-3.5 text-blue-900" />
-                    ROLL NUMBER: <span className="text-red-600">*</span>
-                  </label>
-                  <span className="text-[10px] text-blue-900 bg-blue-100 px-1.5 py-0.2 border border-blue-300 font-bold">
-                    FORMAT: BTECH/15XXX/2X
-                  </span>
-                </div>
-                <div className="win-inset p-1 bg-white">
-                  <input
-                    type="text"
-                    value={rollNo}
-                    onChange={(e) => setRollNo(e.target.value.toUpperCase())}
-                    placeholder="e.g. BTECH/15042/23"
-                    required
-                    className="w-full px-2 py-2 text-sm font-mono uppercase tracking-wider outline-none bg-transparent"
-                  />
-                </div>
-                <p className="text-[10px] text-gray-600 mt-1">
-                  Enter in official university format (e.g. <code>BTECH/15001/23</code> or <code>BTECH/15102/24</code>)
-                </p>
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="win-btn w-full py-3.5 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 hover:from-yellow-400 hover:to-amber-500 text-black font-extrabold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-[0.98] disabled:opacity-50"
-                >
-                  {submitting ? (
-                    <span className="flex items-center gap-2 font-mono">
-                      <span className="inline-block animate-spin">⚡</span> ENERGIZING INDUCTION PASS...
-                    </span>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4 text-black fill-black" />
-                      <span>GET MEETING LINK FOR SELECTED SESSION</span>
-                      <span className="text-black font-bold">➔</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Right Column: Electrical Info & Quick Switch */}
-          <div className="win-box p-3 bg-[#e8e8e8] flex flex-col justify-between text-xs font-mono">
+          <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+            {/* 1. SELECT SESSION */}
             <div>
-              <div className="bg-[#000080] text-white px-2 py-1 font-bold text-xs mb-2 flex items-center justify-between">
-                <span>SUBSTATION FEED</span>
-                <span className="px-1.5 py-0.2 text-[9px] uppercase bg-green-500 text-black font-bold">
-                  ● ENERGIZED
-                </span>
-              </div>
+              <label className="block font-bold text-black mb-1.5 text-xs sm:text-sm flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-[#000080]" />
+                <span>1. SELECT YOUR SESSION:</span>
+              </label>
 
-              <div className="win-inset p-2.5 bg-white text-gray-800 space-y-2 text-[11px] leading-relaxed">
-                <p className="font-bold text-black border-b pb-1 flex items-center gap-1">
-                  <Activity className="w-3.5 h-3.5 text-blue-800" />
-                  INSTRUCTIONS FOR ATTENDEES:
-                </p>
-                <ul className="space-y-1.5 text-gray-700 list-disc list-inside font-sans text-xs">
-                  <li>Pick the session scheduled for your slot.</li>
-                  <li>Enter your Roll Number as <strong>BTECH/15XXX/2X</strong>.</li>
-                  <li>You will receive the exact Google Meet link for that session.</li>
-                </ul>
+              <div className="space-y-1.5">
+                {availableSessions.map((s) => {
+                  const isSelected = (selectedSessionId || availableSessions[0]?.id) === s.id;
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => {
+                        if (s.active) {
+                          retroSound.playClick();
+                          setSelectedSessionId(s.id);
+                        }
+                      }}
+                      className={`p-2 sm:p-2.5 win-box border cursor-pointer select-none transition-all ${
+                        isSelected
+                          ? 'bg-[#ffffd8] border-[#000080] shadow-sm'
+                          : s.active
+                          ? 'bg-white hover:bg-gray-50 border-gray-400'
+                          : 'bg-gray-200 border-gray-300 opacity-60 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="sessionOption"
+                            checked={isSelected}
+                            onChange={() => s.active && setSelectedSessionId(s.id)}
+                            disabled={!s.active}
+                            className="w-4 h-4 text-blue-900 cursor-pointer"
+                          />
+                          <div>
+                            <strong className="block font-bold text-xs sm:text-sm text-gray-900">
+                              {s.title}
+                            </strong>
+                            <span className="text-[11px] text-gray-600 font-mono flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-blue-800 inline" /> {s.time}
+                            </span>
+                          </div>
+                        </div>
+
+                        {!s.active && (
+                          <span className="text-[9px] font-bold text-red-700 bg-red-100 px-1.5 py-0.5 border border-red-300 uppercase shrink-0">
+                            Locked
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="pt-3 border-t border-gray-400 mt-3 text-center">
+            {/* 2. FULL NAME */}
+            <div>
+              <label className="block font-bold text-black mb-1 text-xs sm:text-sm flex items-center gap-1.5">
+                <User className="w-4 h-4 text-[#000080]" />
+                <span>2. FULL NAME:</span>
+              </label>
+              <div className="win-inset p-1 bg-white">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name (e.g. Rohan Sharma)"
+                  required
+                  className="w-full px-2 py-2 text-sm outline-none bg-transparent font-sans"
+                />
+              </div>
+            </div>
+
+            {/* 3. ROLL NUMBER */}
+            <div>
+              <label className="block font-bold text-black mb-1 text-xs sm:text-sm flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Hash className="w-4 h-4 text-[#000080]" />
+                  <span>3. ROLL NUMBER:</span>
+                </span>
+                <span className="text-[10px] font-mono text-blue-900 bg-blue-100 px-1.5 py-0.5 border border-blue-200">
+                  BTECH/15XXX/2X
+                </span>
+              </label>
+              <div className="win-inset p-1 bg-white">
+                <input
+                  type="text"
+                  value={rollNo}
+                  onChange={(e) => setRollNo(e.target.value.toUpperCase())}
+                  placeholder="e.g. BTECH/15001/23"
+                  required
+                  className="w-full px-2 py-2 text-sm outline-none bg-transparent font-mono uppercase tracking-wider"
+                />
+              </div>
+            </div>
+
+            {/* SUBMIT BUTTON */}
+            <div className="pt-2">
               <button
-                onClick={onOpenAdmin}
-                className="win-btn px-3 py-2 text-xs bg-[#c0c0c0] font-sans font-bold flex items-center justify-center gap-1.5 w-full hover:bg-yellow-100"
+                type="submit"
+                disabled={submitting}
+                className="win-btn w-full py-3.5 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 hover:from-yellow-400 hover:to-amber-500 text-black font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-[0.98] disabled:opacity-50"
               >
-                <span>🔑</span> Switch to Admin Panel & Sheet
+                {submitting ? (
+                  <span className="flex items-center gap-2 font-mono">
+                    <span className="inline-block animate-spin">⚡</span> GENERATING MEETING LINK...
+                  </span>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 fill-black" />
+                    <span>GET MEETING LINK</span>
+                    <span>➔</span>
+                  </>
+                )}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       ) : (
-        /* SUCCESS / INAUGURATION LINK & OORJA POWER PASS */
-        <div className="win-box p-3 sm:p-5 bg-[#fffffa]">
-          {/* Success Banner */}
-          <div className="bg-gradient-to-r from-emerald-800 via-teal-900 to-emerald-800 text-white p-3 mb-4 shadow flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl animate-bounce">⚡</span>
-              <div>
-                <h2 className="font-bold text-xs sm:text-sm tracking-wide font-pixel text-yellow-300">
-                  INDUCTION PASS ENERGIZED!
-                </h2>
-                <p className="text-[11px] font-mono text-emerald-200">
-                  {isDuplicate
-                    ? 'Roll number was already registered for this session! Re-verified.'
-                    : 'Logged to Master Inauguration Attendance Sheet.'}
-                </p>
-              </div>
-            </div>
-            <span className="bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 font-mono uppercase border border-black shrink-0">
-              VERIFIED
-            </span>
+        /* RESULT VIEW: CLEAN & DIRECT */
+        <div className="win-box p-3 sm:p-5 bg-white space-y-4 shadow-sm">
+          {/* Status Message */}
+          <div className="bg-emerald-50 border border-emerald-500 p-3 text-center space-y-1">
+            <span className="inline-block text-xl">🎉</span>
+            <h2 className="font-bold text-sm sm:text-base text-emerald-900">
+              Attendance Verified Successfully!
+            </h2>
+            <p className="text-xs text-gray-700">
+              {isDuplicate
+                ? 'Your roll number was already registered for this session.'
+                : 'Your attendance has been logged in the master sheet.'}
+            </p>
           </div>
 
-          {/* Meeting Link Action Card For That Specific Session */}
-          <div className="win-box p-3 sm:p-4 bg-[#e8f4fd] border-2 border-blue-900 mb-4">
-            <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-blue-900 fill-blue-900" />
-                <h3 className="font-bold text-xs sm:text-sm text-blue-950 uppercase font-sans">
-                  {unlockedSessionTitle || 'YOUR SESSION MEETING LINK'}
-                </h3>
-              </div>
+          {/* Direct Meeting Link Box */}
+          <div className="win-box p-3 sm:p-4 bg-[#e8f4fd] border-2 border-blue-900 space-y-2.5">
+            <div className="text-center">
+              <span className="text-[10px] font-mono font-bold text-blue-900 uppercase tracking-wider block">
+                MEETING SESSION UNLOCKED
+              </span>
+              <strong className="text-sm sm:text-base text-gray-900 block font-bold">
+                {unlockedSessionTitle}
+              </strong>
               {unlockedSessionTime && (
-                <span className="text-[10px] font-mono bg-blue-100 text-blue-900 px-2 py-0.5 border border-blue-300 font-bold">
+                <span className="text-xs text-gray-600 font-mono">
                   {unlockedSessionTime}
                 </span>
               )}
             </div>
 
             {meetingUrl ? (
-              <div className="space-y-2.5">
-                <div className="flex flex-col sm:flex-row items-stretch gap-2">
-                  <div className="win-inset flex-1 p-2 bg-white font-mono text-xs sm:text-sm text-blue-900 break-all select-all flex items-center">
+              <div className="space-y-2 pt-1">
+                <a
+                  href={meetingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => retroSound.playClick()}
+                  className="win-btn w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 uppercase tracking-wider shadow-md active:scale-[0.98]"
+                >
+                  <span>🚀 JOIN GOOGLE MEET NOW</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+
+                <div className="flex items-center gap-1.5 pt-1">
+                  <div className="win-inset flex-1 px-2 py-1.5 bg-white text-xs font-mono text-gray-700 truncate select-all">
                     {meetingUrl}
                   </div>
                   <button
                     onClick={handleCopyLink}
-                    className="win-btn py-2.5 px-3 bg-[#c0c0c0] font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 active:bg-gray-300"
+                    className="win-btn px-3 py-1.5 bg-[#c0c0c0] font-bold text-xs flex items-center gap-1 shrink-0 active:bg-gray-300"
                   >
-                    {copiedLink ? <Check className="w-4 h-4 text-green-700" /> : <Copy className="w-4 h-4" />}
-                    <span>{copiedLink ? 'COPIED!' : 'COPY LINK'}</span>
+                    {copiedLink ? <Check className="w-3.5 h-3.5 text-green-700" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedLink ? 'Copied' : 'Copy'}</span>
                   </button>
-                </div>
-
-                <div className="pt-1">
-                  <a
-                    href={meetingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => retroSound.playClick()}
-                    className="win-btn w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 uppercase tracking-wider shadow-lg active:scale-[0.98]"
-                  >
-                    <span>🚀 JOIN {unlockedSessionTitle.toUpperCase()} NOW</span>
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
                 </div>
               </div>
             ) : (
-              <p className="text-xs font-mono text-red-600">
+              <p className="text-xs font-mono text-red-600 text-center">
                 Meeting link has not been set by administrator.
               </p>
             )}
           </div>
 
-          {/* Oorja Induction Pass */}
-          <div className="max-w-md mx-auto win-inset p-3 sm:p-4 bg-[#ffffea] border-2 border-dashed border-yellow-700 font-mono text-xs shadow-md">
-            <div className="text-center border-b border-gray-400 pb-2 mb-2">
-              <div className="flex items-center justify-center gap-1 text-black font-extrabold text-xs sm:text-sm tracking-wider">
-                <span>⚡</span>
-                <span>CLUB OORJA // INDUCTION PASS</span>
-                <span>⚡</span>
-              </div>
-              <p className="text-[9px] text-gray-600">ELECTRICAL ENGINEERING SOCIETY // INAUGURAL SESSION</p>
+          {/* Simple Induction Pass */}
+          <div className="win-inset p-3 bg-[#ffffea] border border-gray-400 font-mono text-xs space-y-1.5">
+            <div className="text-center border-b border-gray-300 pb-1.5 mb-1.5">
+              <strong className="block text-xs font-bold text-gray-900">
+                ⚡ CLUB OORJA INDUCTION PASS
+              </strong>
+              <span className="text-[10px] text-gray-500">Pass ID: {receipt.id}</span>
             </div>
 
-            <div className="space-y-1.5 text-gray-800 text-[11px]">
-              <div className="flex justify-between border-b border-gray-200 pb-1">
-                <span className="text-gray-500">PASS ID:</span>
-                <span className="font-bold text-black">{receipt.id}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-200 pb-1">
-                <span className="text-gray-500">STUDENT NAME:</span>
-                <span className="font-bold text-black uppercase">{receipt.name}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-200 pb-1">
-                <span className="text-gray-500">ROLL NUMBER:</span>
-                <span className="font-bold text-blue-900">{receipt.rollNo}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-200 pb-1">
-                <span className="text-gray-500">SESSION:</span>
-                <span className="font-bold text-gray-900 truncate max-w-[200px]">{receipt.sessionTitle}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-200 pb-1">
-                <span className="text-gray-500">TIME OF INDUCTION:</span>
-                <span className="text-black">{new Date(receipt.timestamp).toLocaleTimeString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">SECURITY HASH:</span>
-                <span className="font-mono text-emerald-800 font-bold">{receipt.securityHash}</span>
-              </div>
+            <div className="flex justify-between text-[11px]">
+              <span className="text-gray-500">Student:</span>
+              <span className="font-bold text-black uppercase">{receipt.name}</span>
             </div>
-
-            <div className="mt-3 pt-2 border-t border-gray-400 text-center">
-              <div className="font-mono tracking-widest text-sm text-black font-bold select-none h-6 flex justify-center items-center">
-                ||| | |||| | ||||| || | ||| |||| | ||| | ||||
-              </div>
-              <p className="text-[9px] text-gray-500">OFFICIAL DIGITAL ACCESS TOKEN</p>
+            <div className="flex justify-between text-[11px]">
+              <span className="text-gray-500">Roll No:</span>
+              <span className="font-bold text-blue-900">{receipt.rollNo}</span>
+            </div>
+            <div className="flex justify-between text-[11px]">
+              <span className="text-gray-500">Session:</span>
+              <span className="font-bold text-gray-800 truncate max-w-[200px]">{receipt.sessionTitle}</span>
+            </div>
+            <div className="flex justify-between text-[11px]">
+              <span className="text-gray-500">Time:</span>
+              <span className="text-black">{new Date(receipt.timestamp).toLocaleTimeString()}</span>
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
+          {/* Return / Reset Button */}
+          <div className="text-center pt-1">
             <button
               onClick={handleReset}
-              className="win-btn w-full sm:w-auto px-4 py-2.5 bg-[#c0c0c0] font-sans font-bold text-xs flex items-center justify-center gap-1.5 active:bg-gray-300"
+              className="win-btn px-4 py-2 bg-[#c0c0c0] font-bold text-xs active:bg-gray-300"
             >
-              <span>↩</span> Check In Another Member
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="win-btn w-full sm:w-auto px-4 py-2.5 bg-[#c0c0c0] font-sans font-bold text-xs flex items-center justify-center gap-1.5 active:bg-gray-300"
-            >
-              <span>🖨️</span> Save / Print Pass
+              ↩ Check In Another Student
             </button>
           </div>
         </div>
       )}
+
+      {/* Subtle, Clean Footer */}
+      <div className="text-center pt-4">
+        <button
+          onClick={onOpenAdmin}
+          className="text-xs text-gray-500 hover:text-gray-800 underline font-mono"
+        >
+          Admin Control & Master Sheet ➔
+        </button>
+      </div>
     </div>
   );
 };
