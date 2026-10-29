@@ -1,29 +1,35 @@
-export interface SessionConfig {
+export interface SessionItem {
+  id: string;
+  title: string;
+  time: string;
+  speaker: string;
   meetingLink: string | null;
-  meetingTitle: string;
-  instructor: string;
-  sessionActive: boolean;
+  active: boolean;
+}
+
+export interface SessionConfig {
+  sessions: SessionItem[];
   customNotice: string;
-  autoRedirectDelay?: number;
   totalAttendees?: number;
-  adminPassword?: string;
 }
 
 export interface Attendee {
   id: string;
   name: string;
   rollNo: string;
+  sessionId?: string;
+  sessionTitle?: string;
   timestamp: string;
   status: 'Present' | 'Late' | 'Absent' | 'Excused';
   device: string;
   notes: string;
-  sessionTitle?: string;
 }
 
 export interface AttendanceReceipt {
   id: string;
   name: string;
   rollNo: string;
+  sessionTitle: string;
   timestamp: string;
   status: string;
   securityHash: string;

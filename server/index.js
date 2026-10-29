@@ -7,7 +7,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// In Vercel serverless, root filesystem is read-only except /tmp
 const isVercel = process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined;
 const DATA_DIR = isVercel ? '/tmp' : path.join(__dirname, '../data');
 
@@ -21,63 +20,87 @@ if (!fs.existsSync(DATA_DIR)) {
 
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-// OORJA Electrical Club Inauguration Seed Data
+// Initial Multi-Session Seed Data
 const initialDb = {
   config: {
-    meetingLink: 'https://meet.google.com/oorja-inauguration-2026',
-    meetingTitle: '⚡ OORJA CLUB INAUGURATION 2026 // Keynote & Live Induction Session',
-    instructor: 'Club Oorja Executive Board & Faculty In-Charge',
-    sessionActive: true,
-    requireRollPrefix: false,
-    customNotice: '⚡ HIGH VOLTAGE NOTICE: Welcome to CLUB OORJA! Enter your Name & Roll Number to claim your Official Induction Pass & join the Inauguration Session.',
     adminPassword: 'oorja@12344321',
+    customNotice: '⚡ HIGH VOLTAGE: Welcome to CLUB OORJA! Select your Session, enter your Name & Roll No (BTECH/15XXX/2X) to claim your Induction Pass.',
     autoRedirectDelay: 5,
   },
+  sessions: [
+    {
+      id: 'ses-1',
+      title: 'Session 1: Grand Inauguration & Keynote Address',
+      time: '10:00 AM - 11:30 AM',
+      speaker: 'Chief Guest & Faculty Advisor',
+      meetingLink: 'https://meet.google.com/oorja-session-1',
+      active: true,
+    },
+    {
+      id: 'ses-2',
+      title: 'Session 2: EV Tech, Smart Grids & Robotics Lab',
+      time: '01:30 PM - 03:00 PM',
+      speaker: 'Technical Leads & Domain Heads',
+      meetingLink: 'https://meet.google.com/oorja-session-2',
+      active: true,
+    },
+    {
+      id: 'ses-3',
+      title: 'Session 3: Core Team Induction & Project Roadmaps',
+      time: '04:00 PM - 05:30 PM',
+      speaker: 'Club Oorja Executive Council',
+      meetingLink: 'https://meet.google.com/oorja-session-3',
+      active: true,
+    },
+  ],
   attendees: [
     {
       id: 'OORJA-001',
       name: 'Rohan Sharma',
       rollNo: 'BTECH/15001/23',
+      sessionId: 'ses-1',
+      sessionTitle: 'Session 1: Grand Inauguration & Keynote Address',
       timestamp: new Date(Date.now() - 3600000 * 1.5).toISOString(),
       status: 'Present',
       device: 'Android Phone',
       notes: 'Inducted Member',
-      sessionTitle: '⚡ OORJA CLUB INAUGURATION 2026'
     },
     {
       id: 'OORJA-002',
       name: 'Priya Verma',
       rollNo: 'BTECH/15014/23',
+      sessionId: 'ses-2',
+      sessionTitle: 'Session 2: EV Tech, Smart Grids & Robotics Lab',
       timestamp: new Date(Date.now() - 3600000 * 1.2).toISOString(),
       status: 'Present',
       device: 'iPhone / iOS',
       notes: 'Inducted Member',
-      sessionTitle: '⚡ OORJA CLUB INAUGURATION 2026'
     },
     {
       id: 'OORJA-003',
       name: 'Aarav Patel',
       rollNo: 'BTECH/15023/24',
+      sessionId: 'ses-1',
+      sessionTitle: 'Session 1: Grand Inauguration & Keynote Address',
       timestamp: new Date(Date.now() - 3600000 * 0.8).toISOString(),
       status: 'Present',
       device: 'MacBook Air',
       notes: 'Inducted Member',
-      sessionTitle: '⚡ OORJA CLUB INAUGURATION 2026'
     },
     {
       id: 'OORJA-004',
       name: 'Sneha Kulkarni',
       rollNo: 'BTECH/15045/24',
+      sessionId: 'ses-3',
+      sessionTitle: 'Session 3: Core Team Induction & Project Roadmaps',
       timestamp: new Date(Date.now() - 1800000).toISOString(),
       status: 'Late',
-      device: 'Windows Mobile',
+      device: 'Mobile Browser',
       notes: 'Inducted Member',
-      sessionTitle: '⚡ OORJA CLUB INAUGURATION 2026'
-    }
-  ]
+    },
+  ],
 };
 
-// In-memory memory fallback in case disk is read-only
 let memoryDb = JSON.parse(JSON.stringify(initialDb));
 
 function readDb() {
@@ -86,13 +109,19 @@ function readDb() {
       try {
         fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2), 'utf-8');
       } catch {
-        // Ephemeral fallback
+        // Ephemeral
       }
       return memoryDb;
     }
     const content = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(content);
-    // Keep in-memory in sync
+
+    // Migration helper: ensure sessions array exists
+    if (!parsed.sessions || !Array.isArray(parsed.sessions)) {
+      parsed.sessions = initialDb.sessions;
+      writeDb(parsed);
+    }
+
     memoryDb = parsed;
     return parsed;
   } catch (err) {
@@ -106,7 +135,7 @@ function writeDb(data) {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
-    console.warn('Filesystem write notice (using memory fallback):', err.message);
+    console.warn('Filesystem write notice:', err.message);
   }
 }
 
@@ -114,17 +143,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Public session endpoint
+// Public session endpoint: returns all sessions (with meeting links if active) and config
 app.get('/api/session', (req, res) => {
   const db = readDb();
+  const sessions = (db.sessions || []).map((s) => ({
+    id: s.id,
+    title: s.title,
+    time: s.time,
+    speaker: s.speaker,
+    active: Boolean(s.active),
+    meetingLink: s.active ? s.meetingLink : null,
+  }));
+
   res.json({
-    meetingTitle: db.config.meetingTitle,
-    instructor: db.config.instructor,
-    sessionActive: db.config.sessionActive,
+    sessions,
     customNotice: db.config.customNotice,
-    autoRedirectDelay: db.config.autoRedirectDelay,
     totalAttendees: db.attendees.length,
-    meetingLink: db.config.sessionActive ? db.config.meetingLink : null
   });
 });
 
@@ -138,55 +172,70 @@ app.post('/api/admin/login', (req, res) => {
   return res.status(401).json({ success: false, message: 'Invalid Electrical Grid Passcode! Access Denied.' });
 });
 
-// Admin get full configuration
+// Admin get full configuration & sessions
 app.get('/api/admin/config', (req, res) => {
   const auth = req.headers['authorization'];
   const db = readDb();
   if (auth !== 'Bearer oorja_auth_power_token_2026') {
     return res.status(401).json({ error: 'Unauthorized Grid Access' });
   }
-  res.json(db.config);
+  res.json({
+    config: db.config,
+    sessions: db.sessions,
+  });
 });
 
-// Admin update session & meeting link
+// Admin update sessions list or custom notice
 app.post('/api/admin/config', (req, res) => {
   const auth = req.headers['authorization'];
   if (auth !== 'Bearer oorja_auth_power_token_2026') {
     return res.status(401).json({ error: 'Unauthorized Grid Access' });
   }
   const db = readDb();
-  db.config = {
-    ...db.config,
-    ...req.body,
-  };
+  const { customNotice, sessions } = req.body;
+
+  if (customNotice !== undefined) {
+    db.config.customNotice = customNotice;
+  }
+  if (Array.isArray(sessions)) {
+    db.sessions = sessions;
+  }
+
   writeDb(db);
-  res.json({ success: true, config: db.config });
+  res.json({ success: true, config: db.config, sessions: db.sessions });
 });
 
-// Student Check-In & Get Meeting Link
+// Student Check-In & Get Chosen Session's Meeting Link
 app.post('/api/attend', (req, res) => {
-  const { name, rollNo, notes } = req.body;
-  
+  const { name, rollNo, sessionId, notes } = req.body;
+
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Please enter your Full Name.' });
   }
   if (!rollNo || !rollNo.trim()) {
-    return res.status(400).json({ error: 'Please enter your Roll / Student ID Number.' });
+    return res.status(400).json({ error: 'Please enter your Roll Number (Format: BTECH/15XXX/2X).' });
   }
 
   const db = readDb();
-
-  if (!db.config.sessionActive) {
-    return res.status(403).json({
-      error: '⚡ OORJA GRID OFFLINE: Inauguration room check-in is temporarily PAUSED by the administration.'
-    });
-  }
-
   const cleanRollNo = rollNo.trim().toUpperCase();
   const cleanName = name.trim();
 
+  // Find targeted session
+  const targetSession = (db.sessions || []).find((s) => s.id === sessionId) || (db.sessions || [])[0];
+
+  if (!targetSession) {
+    return res.status(400).json({ error: 'No active session found.' });
+  }
+
+  if (!targetSession.active) {
+    return res.status(403).json({
+      error: `⚡ [${targetSession.title}] is currently LOCKED or closed by the admin. Please select another active session.`,
+    });
+  }
+
+  // Check duplicate check-in for the same session
   const existingIndex = db.attendees.findIndex(
-    a => a.rollNo.toUpperCase() === cleanRollNo
+    (a) => a.rollNo.toUpperCase() === cleanRollNo && a.sessionId === targetSession.id
   );
 
   const userAgent = req.headers['user-agent'] || 'Electrical Terminal';
@@ -212,11 +261,12 @@ app.post('/api/attend', (req, res) => {
       id: recordId,
       name: cleanName,
       rollNo: cleanRollNo,
+      sessionId: targetSession.id,
+      sessionTitle: targetSession.title,
       timestamp: now,
       status: 'Present',
       device,
-      notes: notes || 'Club Member',
-      sessionTitle: db.config.meetingTitle
+      notes: notes || 'Inducted Member',
     };
     db.attendees.unshift(attendeeRecord);
     writeDb(db);
@@ -225,21 +275,23 @@ app.post('/api/attend', (req, res) => {
   return res.json({
     success: true,
     isDuplicate,
-    meetingLink: db.config.meetingLink,
-    meetingTitle: db.config.meetingTitle,
-    instructor: db.config.instructor,
+    meetingLink: targetSession.meetingLink,
+    sessionTitle: targetSession.title,
+    sessionTime: targetSession.time,
+    speaker: targetSession.speaker,
     receipt: {
       id: attendeeRecord.id,
       name: attendeeRecord.name,
       rollNo: attendeeRecord.rollNo,
+      sessionTitle: attendeeRecord.sessionTitle,
       timestamp: attendeeRecord.timestamp,
       status: attendeeRecord.status,
-      securityHash: `⚡-EE-${Buffer.from(`${attendeeRecord.rollNo}:${attendeeRecord.timestamp}`).toString('base64').substring(0, 8)}`
-    }
+      securityHash: `⚡-EE-${Buffer.from(`${attendeeRecord.rollNo}:${attendeeRecord.sessionId}`).toString('base64').substring(0, 8)}`,
+    },
   });
 });
 
-// Admin Get Attendees (The Sheet Data)
+// Admin Get Attendees (The Sheet Data) & Sessions
 app.get('/api/attendees', (req, res) => {
   const auth = req.headers['authorization'];
   if (auth !== 'Bearer oorja_auth_power_token_2026') {
@@ -249,11 +301,12 @@ app.get('/api/attendees', (req, res) => {
   res.json({
     total: db.attendees.length,
     attendees: db.attendees,
-    session: db.config
+    sessions: db.sessions,
+    config: db.config,
   });
 });
 
-// Admin update an attendee record in the sheet
+// Admin update an attendee record
 app.patch('/api/attendees/:id', (req, res) => {
   const auth = req.headers['authorization'];
   if (auth !== 'Bearer oorja_auth_power_token_2026') {
@@ -261,14 +314,14 @@ app.patch('/api/attendees/:id', (req, res) => {
   }
   const { id } = req.params;
   const db = readDb();
-  const index = db.attendees.findIndex(a => a.id === id);
+  const index = db.attendees.findIndex((a) => a.id === id);
   if (index === -1) {
     return res.status(404).json({ error: 'Record not found' });
   }
 
   db.attendees[index] = {
     ...db.attendees[index],
-    ...req.body
+    ...req.body,
   };
   writeDb(db);
   res.json({ success: true, attendee: db.attendees[index] });
@@ -282,7 +335,7 @@ app.delete('/api/attendees/:id', (req, res) => {
   }
   const { id } = req.params;
   const db = readDb();
-  db.attendees = db.attendees.filter(a => a.id !== id);
+  db.attendees = db.attendees.filter((a) => a.id !== id);
   writeDb(db);
   res.json({ success: true, remaining: db.attendees.length });
 });
@@ -299,22 +352,22 @@ app.post('/api/attendees/clear', (req, res) => {
   res.json({ success: true, count: 0 });
 });
 
-// Download CSV for Google Sheets / Excel
+// Download CSV with Session details
 app.get('/api/export/csv', (req, res) => {
   const db = readDb();
-  const headers = ['Record ID', 'Roll Number', 'Full Name', 'Check-in Time', 'Status', 'Device/System', 'Notes', 'Session Title'];
-  const rows = db.attendees.map(a => [
+  const headers = ['Record ID', 'Roll Number', 'Full Name', 'Session', 'Check-in Time', 'Status', 'Device/System', 'Notes'];
+  const rows = db.attendees.map((a) => [
     `"${a.id}"`,
     `"${a.rollNo}"`,
     `"${a.name.replace(/"/g, '""')}"`,
+    `"${(a.sessionTitle || 'General').replace(/"/g, '""')}"`,
     `"${new Date(a.timestamp).toLocaleString()}"`,
     `"${a.status}"`,
     `"${a.device}"`,
     `"${(a.notes || '').replace(/"/g, '""')}"`,
-    `"${(a.sessionTitle || db.config.meetingTitle).replace(/"/g, '""')}"`
   ]);
 
-  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
 
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', `attachment; filename="OORJA_attendance_sheet_${new Date().toISOString().slice(0, 10)}.csv"`);
@@ -331,7 +384,6 @@ if (fs.existsSync(DIST_DIR)) {
   });
 }
 
-// Export for Vercel serverless handler & local runner
 export default app;
 
 if (process.env.NODE_ENV !== 'production' || !isVercel) {

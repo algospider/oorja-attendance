@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SessionConfig, AttendanceReceipt } from '../types';
+import { SessionConfig, AttendanceReceipt, SessionItem } from '../types';
 import { retroSound } from '../utils/audio';
 import {
   ExternalLink,
@@ -11,6 +11,9 @@ import {
   Radio,
   User,
   Hash,
+  Clock,
+  Calendar,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface StudentPortalProps {
@@ -28,12 +31,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [rollNo, setRollNo] = useState('');
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(() => {
+    return session?.sessions?.[0]?.id || 'ses-1';
+  });
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
+  const [unlockedSessionTitle, setUnlockedSessionTitle] = useState<string>('');
+  const [unlockedSessionTime, setUnlockedSessionTime] = useState<string>('');
   const [receipt, setReceipt] = useState<AttendanceReceipt | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
+
+  const availableSessions: SessionItem[] = session?.sessions || [];
+  const currentChosenSession =
+    availableSessions.find((s) => s.id === selectedSessionId) || availableSessions[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +65,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       setErrorMsg('Error: Roll Number is required (Format: BTECH/15XXX/2X).');
       return;
     }
+    if (!currentChosenSession) {
+      retroSound.playError();
+      setErrorMsg('Error: Please select a session.');
+      return;
+    }
+    if (!currentChosenSession.active) {
+      retroSound.playError();
+      setErrorMsg(`Error: [${currentChosenSession.title}] is currently locked by the admin.`);
+      return;
+    }
 
     setSubmitting(true);
 
@@ -63,6 +85,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         body: JSON.stringify({
           name: cleanName,
           rollNo: cleanRollNo,
+          sessionId: currentChosenSession.id,
           notes: 'Inducted Member',
         }),
       });
@@ -74,6 +97,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       }
 
       setMeetingUrl(data.meetingLink);
+      setUnlockedSessionTitle(data.sessionTitle || currentChosenSession.title);
+      setUnlockedSessionTime(data.sessionTime || currentChosenSession.time);
       setReceipt(data.receipt);
       setIsDuplicate(Boolean(data.isDuplicate));
       retroSound.playSuccess();
@@ -105,7 +130,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   };
 
   return (
-    <div className="p-2 sm:p-4 text-black">
+    <div className="p-2 sm:p-4 text-black font-sans">
       {/* High Voltage Hazard Ribbon */}
       <div className="h-2 w-full hazard-tape mb-2 rounded-none"></div>
 
@@ -122,15 +147,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 ⚡ 440V HIGH VOLTAGE
               </span>
               <span className="bg-blue-900 text-yellow-300 font-mono text-[9px] font-bold px-1.5 py-0.2">
-                EST. 2026
+                INAUGURATION 2026
               </span>
             </div>
 
             <h1 className="font-extrabold text-xs sm:text-base tracking-wide uppercase font-pixel text-[#000080] truncate mt-0.5">
-              CLUB OORJA // INAUGURATION 2026
+              CLUB OORJA // ELECTRICAL SOCIETY
             </h1>
             <p className="text-[11px] text-gray-700 font-mono truncate">
-              {session?.meetingTitle || '⚡ Electrical Engineering Society Grand Inaugural Session'}
+              Select your Session & Enter Roll No to receive the specific Google Meet link.
             </p>
           </div>
         </div>
@@ -138,8 +163,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         {/* Live Grid Metrics */}
         <div className="grid grid-cols-3 gap-1.5 text-center font-mono text-[10px] sm:text-xs mb-2">
           <div className="win-inset py-1 px-1 bg-black text-yellow-400 font-bold">
-            <span className="text-[9px] text-gray-400 block">VOLTAGE</span>
-            <span>230V AC</span>
+            <span className="text-[9px] text-gray-400 block">SESSIONS</span>
+            <span>{availableSessions.length} SCHEDULED</span>
           </div>
           <div className="win-inset py-1 px-1 bg-black text-cyan-400 font-bold">
             <span className="text-[9px] text-gray-400 block">FREQUENCY</span>
@@ -147,7 +172,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
           <div className="win-inset py-1 px-1 bg-black text-emerald-400 font-bold">
             <span className="text-[9px] text-gray-400 block">ATTENDEES</span>
-            <span>{session?.totalAttendees ?? 0} INDUCTED</span>
+            <span>{session?.totalAttendees ?? 0} LOGGED</span>
           </div>
         </div>
 
@@ -155,8 +180,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         <div className="marquee-container bg-black text-yellow-300 font-mono text-xs py-1 px-2 border border-yellow-500">
           <div className="marquee-content font-bold flex items-center gap-2">
             <span>⚡ INAUGURATION NOTICE:</span>
-            <span>{session?.customNotice || 'Welcome to Club Oorja! Register with your Name & Roll Number to join the live session.'}</span>
-            <span>★ HOST: {session?.instructor || 'Club Oorja Executive Board'} ★</span>
+            <span>{session?.customNotice || 'Welcome to Club Oorja! Select which session you are joining and enter your Name & Roll No.'}</span>
           </div>
         </div>
       </div>
@@ -164,34 +188,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       {/* Main Container */}
       {!receipt ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* Left Column: Form */}
+          {/* Left Column: Form & Session Selector */}
           <div className="lg:col-span-2 win-box p-3 bg-[#c0c0c0]">
             <div className="border-b-2 border-white pb-1.5 mb-3 flex items-center justify-between">
               <h2 className="font-bold text-xs sm:text-sm text-[#000080] flex items-center gap-1.5 uppercase font-mono">
                 <Radio className="w-4 h-4 text-red-600 animate-ping" />
-                <span>INDUCTION ATTENDANCE ENTRY</span>
+                <span>STEP 1: SELECT SESSION & ENTER DETAILS</span>
               </h2>
               <span className="text-[10px] font-mono bg-yellow-200 text-black px-1.5 py-0.5 border border-black font-bold">
                 GRID #2026
               </span>
             </div>
-
-            {/* Inactive Session Warning */}
-            {session && !session.sessionActive && (
-              <div className="mb-3 p-2.5 bg-red-100 border-2 border-red-700 text-red-900 text-xs font-mono flex items-start gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-700 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="block font-bold uppercase">⚡ GRID SWITCH OPEN: Check-ins Paused</strong>
-                  The Oorja Administration has momentarily paused entry. Please stand by or refresh.
-                  <button
-                    onClick={onRefreshSession}
-                    className="mt-2 win-btn px-2.5 py-1 text-xs bg-white text-black block active:bg-gray-200"
-                  >
-                    🔄 Re-check Grid Status
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Error Message */}
             {errorMsg && (
@@ -202,6 +209,74 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             )}
 
             <form onSubmit={handleSubmit} className="space-y-3 font-mono text-xs">
+              {/* SESSION SELECTOR (TOUCH CARDS ON MOBILE) */}
+              <div>
+                <label className="block font-bold text-black mb-1.5 text-xs sm:text-sm flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-blue-900" />
+                  CHOOSE WHICH SESSION YOU ARE JOINING: <span className="text-red-600">*</span>
+                </label>
+
+                <div className="space-y-1.5">
+                  {availableSessions.map((s) => {
+                    const isSelected = (selectedSessionId || availableSessions[0]?.id) === s.id;
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => {
+                          if (s.active) {
+                            retroSound.playClick();
+                            setSelectedSessionId(s.id);
+                          }
+                        }}
+                        className={`p-2.5 win-box border-2 cursor-pointer transition-all select-none ${
+                          isSelected
+                            ? 'bg-[#ffffd0] border-[#000080] shadow-md ring-1 ring-[#000080]'
+                            : s.active
+                            ? 'bg-white border-gray-400 hover:bg-gray-50'
+                            : 'bg-gray-200 border-gray-400 opacity-60 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="radio"
+                              name="sessionOption"
+                              checked={isSelected}
+                              onChange={() => s.active && setSelectedSessionId(s.id)}
+                              disabled={!s.active}
+                              className="mt-0.5 w-4 h-4 text-blue-900 cursor-pointer"
+                            />
+                            <div>
+                              <strong className="block font-bold text-xs sm:text-sm text-gray-900 leading-snug">
+                                {s.title}
+                              </strong>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-600 font-sans">
+                                <span className="flex items-center gap-0.5">
+                                  <Clock className="w-3 h-3 text-blue-700" /> {s.time}
+                                </span>
+                                {s.speaker && (
+                                  <span>• Host: <strong>{s.speaker}</strong></span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span
+                            className={`px-1.5 py-0.5 text-[9px] font-bold uppercase shrink-0 ${
+                              s.active
+                                ? 'bg-green-100 text-green-800 border border-green-500'
+                                : 'bg-red-100 text-red-800 border border-red-500'
+                            }`}
+                          >
+                            {s.active ? '● OPEN' : '○ LOCKED'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Name Field */}
               <div>
                 <label className="block font-bold text-black mb-1 flex items-center gap-1 text-xs sm:text-sm">
@@ -215,7 +290,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Rohan Sharma"
                     required
-                    disabled={session ? !session.sessionActive : false}
                     className="w-full px-2 py-2 text-sm font-sans outline-none bg-transparent"
                   />
                 </div>
@@ -239,7 +313,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     onChange={(e) => setRollNo(e.target.value.toUpperCase())}
                     placeholder="e.g. BTECH/15042/23"
                     required
-                    disabled={session ? !session.sessionActive : false}
                     className="w-full px-2 py-2 text-sm font-mono uppercase tracking-wider outline-none bg-transparent"
                   />
                 </div>
@@ -252,7 +325,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={submitting || (session ? !session.sessionActive : false)}
+                  disabled={submitting}
                   className="win-btn w-full py-3.5 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 hover:from-yellow-400 hover:to-amber-500 text-black font-extrabold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-[0.98] disabled:opacity-50"
                 >
                   {submitting ? (
@@ -262,7 +335,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   ) : (
                     <>
                       <Zap className="w-4 h-4 text-black fill-black" />
-                      <span>SUBMIT & UNLOCK INAUGURATION LINK</span>
+                      <span>GET MEETING LINK FOR SELECTED SESSION</span>
                       <span className="text-black font-bold">➔</span>
                     </>
                   )}
@@ -276,8 +349,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <div>
               <div className="bg-[#000080] text-white px-2 py-1 font-bold text-xs mb-2 flex items-center justify-between">
                 <span>SUBSTATION FEED</span>
-                <span className={`px-1.5 py-0.2 text-[9px] uppercase ${session?.sessionActive ? 'bg-green-500 text-black font-bold' : 'bg-red-500 text-white'}`}>
-                  {session?.sessionActive ? '● ENERGIZED' : '○ DE-ENERGIZED'}
+                <span className="px-1.5 py-0.2 text-[9px] uppercase bg-green-500 text-black font-bold">
+                  ● ENERGIZED
                 </span>
               </div>
 
@@ -286,10 +359,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   <Activity className="w-3.5 h-3.5 text-blue-800" />
                   INSTRUCTIONS FOR ATTENDEES:
                 </p>
-                <ul className="space-y-1 text-gray-700 list-disc list-inside">
-                  <li>Enter your official Roll No as <strong>BTECH/15XXX/2X</strong>.</li>
-                  <li>Clicking submit generates your official <strong>Oorja Induction Pass</strong>.</li>
-                  <li>Use the Google Meet link unlocked on the next screen to join the live address.</li>
+                <ul className="space-y-1.5 text-gray-700 list-disc list-inside font-sans text-xs">
+                  <li>Pick the session scheduled for your slot.</li>
+                  <li>Enter your Roll Number as <strong>BTECH/15XXX/2X</strong>.</li>
+                  <li>You will receive the exact Google Meet link for that session.</li>
                 </ul>
               </div>
             </div>
@@ -317,7 +390,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </h2>
                 <p className="text-[11px] font-mono text-emerald-200">
                   {isDuplicate
-                    ? 'Roll number was already registered! Induction re-verified.'
+                    ? 'Roll number was already registered for this session! Re-verified.'
                     : 'Logged to Master Inauguration Attendance Sheet.'}
                 </p>
               </div>
@@ -327,13 +400,20 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </span>
           </div>
 
-          {/* Large Phone-First Meeting Link Action Card */}
+          {/* Meeting Link Action Card For That Specific Session */}
           <div className="win-box p-3 sm:p-4 bg-[#e8f4fd] border-2 border-blue-900 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-5 h-5 text-blue-900 fill-blue-900" />
-              <h3 className="font-bold text-xs sm:text-sm text-blue-950 uppercase font-sans">
-                LIVE INAUGURATION MEETING LINK
-              </h3>
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-blue-900 fill-blue-900" />
+                <h3 className="font-bold text-xs sm:text-sm text-blue-950 uppercase font-sans">
+                  {unlockedSessionTitle || 'YOUR SESSION MEETING LINK'}
+                </h3>
+              </div>
+              {unlockedSessionTime && (
+                <span className="text-[10px] font-mono bg-blue-100 text-blue-900 px-2 py-0.5 border border-blue-300 font-bold">
+                  {unlockedSessionTime}
+                </span>
+              )}
             </div>
 
             {meetingUrl ? (
@@ -359,7 +439,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     onClick={() => retroSound.playClick()}
                     className="win-btn w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 uppercase tracking-wider shadow-lg active:scale-[0.98]"
                   >
-                    <span>🚀 JOIN INAUGURATION (GOOGLE MEET)</span>
+                    <span>🚀 JOIN {unlockedSessionTitle.toUpperCase()} NOW</span>
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 </div>
@@ -394,6 +474,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <div className="flex justify-between border-b border-gray-200 pb-1">
                 <span className="text-gray-500">ROLL NUMBER:</span>
                 <span className="font-bold text-blue-900">{receipt.rollNo}</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-200 pb-1">
+                <span className="text-gray-500">SESSION:</span>
+                <span className="font-bold text-gray-900 truncate max-w-[200px]">{receipt.sessionTitle}</span>
               </div>
               <div className="flex justify-between border-b border-gray-200 pb-1">
                 <span className="text-gray-500">TIME OF INDUCTION:</span>

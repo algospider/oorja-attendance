@@ -1,64 +1,90 @@
 {
   "config": {
-    "meetingLink": "https://meet.google.com/oorja-inauguration-2026",
-    "meetingTitle": "⚡ OORJA CLUB INAUGURATION 2026 // Keynote & Induction Session",
-    "instructor": "Club Oorja Executive Board & Faculty Advisor",
-    "sessionActive": true,
-    "requireRollPrefix": false,
-    "customNotice": "⚡ HIGH VOLTAGE: Welcome to CLUB OORJA Inauguration! Submit your Name & Roll No (BTECH/15XXX/2X) to generate your Official Induction Pass and access the meeting.",
     "adminPassword": "oorja@12344321",
+    "customNotice": "⚡ HIGH VOLTAGE: Select your session, enter your Name & Roll No (BTECH/15XXX/2X) to claim your Induction Pass!",
     "autoRedirectDelay": 5
   },
+  "sessions": [
+    {
+      "id": "ses-1",
+      "title": "Session 1: Grand Inauguration & Keynote Address",
+      "time": "10:00 AM - 11:30 AM",
+      "speaker": "Chief Guest & Faculty Advisor",
+      "meetingLink": "https://meet.google.com/oorja-session-1",
+      "active": true
+    },
+    {
+      "id": "ses-2",
+      "title": "Session 2: EV Tech, Smart Grids & Robotics Lab",
+      "time": "01:30 PM - 03:00 PM",
+      "speaker": "Technical Leads & Domain Heads",
+      "meetingLink": "https://meet.google.com/oorja-session-2",
+      "active": true
+    },
+    {
+      "id": "ses-3",
+      "title": "Session 3: Core Team Induction & Project Roadmaps",
+      "time": "04:00 PM - 05:30 PM",
+      "speaker": "Club Oorja Executive Council",
+      "meetingLink": "https://meet.google.com/oorja-session-3",
+      "active": true
+    }
+  ],
   "attendees": [
     {
-      "id": "OORJA-799",
-      "name": "Aditya Verma",
-      "rollNo": "BTECH/15088/24",
-      "timestamp": "2026-10-29T18:12:56.922Z",
+      "id": "OORJA-804",
+      "name": "Karan Malhotra",
+      "rollNo": "BTECH/15077/23",
+      "sessionId": "ses-2",
+      "sessionTitle": "Session 2: EV Tech, Smart Grids & Robotics Lab",
+      "timestamp": "2026-10-29T18:17:22.007Z",
       "status": "Present",
       "device": "Desktop",
-      "notes": "Club Member",
-      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026 // Keynote & Induction Session"
+      "notes": "Inducted Member"
     },
     {
       "id": "OORJA-001",
       "name": "Rohan Sharma",
       "rollNo": "BTECH/15001/23",
+      "sessionId": "ses-1",
+      "sessionTitle": "Session 1: Grand Inauguration & Keynote Address",
       "timestamp": "2026-10-29T16:15:00.000Z",
       "status": "Present",
       "device": "Android Phone",
-      "notes": "Inducted Member",
-      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
+      "notes": "Inducted Member"
     },
     {
       "id": "OORJA-002",
       "name": "Priya Verma",
       "rollNo": "BTECH/15014/23",
+      "sessionId": "ses-2",
+      "sessionTitle": "Session 2: EV Tech, Smart Grids & Robotics Lab",
       "timestamp": "2026-10-29T16:30:00.000Z",
       "status": "Present",
       "device": "iPhone / iOS",
-      "notes": "Inducted Member",
-      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
+      "notes": "Inducted Member"
     },
     {
       "id": "OORJA-003",
       "name": "Aarav Patel",
       "rollNo": "BTECH/15023/24",
+      "sessionId": "ses-1",
+      "sessionTitle": "Session 1: Grand Inauguration & Keynote Address",
       "timestamp": "2026-10-29T16:55:00.000Z",
       "status": "Present",
       "device": "MacBook Air",
-      "notes": "Inducted Member",
-      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
+      "notes": "Inducted Member"
     },
     {
       "id": "OORJA-004",
       "name": "Sneha Kulkarni",
       "rollNo": "BTECH/15045/24",
+      "sessionId": "ses-3",
+      "sessionTitle": "Session 3: Core Team Induction & Project Roadmaps",
       "timestamp": "2026-10-29T17:15:00.000Z",
       "status": "Late",
       "device": "Mobile Browser",
-      "notes": "Inducted Member",
-      "sessionTitle": "⚡ OORJA CLUB INAUGURATION 2026"
+      "notes": "Inducted Member"
     }
   ]
 }

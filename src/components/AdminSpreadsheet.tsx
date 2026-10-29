@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SessionConfig, Attendee } from '../types';
+import { SessionConfig, Attendee, SessionItem } from '../types';
 import { retroSound } from '../utils/audio';
 import {
   Download,
@@ -14,11 +14,10 @@ import {
   Table,
   Sliders,
   Zap,
-  LayoutGrid,
-  ListFilter,
-  UserCheck,
-  UserX,
-  Clock
+  Clock,
+  Calendar,
+  ExternalLink,
+  Edit2
 } from 'lucide-react';
 
 interface AdminSpreadsheetProps {
@@ -39,40 +38,39 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
   const [passcode, setPasscode] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // View Mode: 'cards' (Mobile Friendly) or 'sheet' (Desktop Grid)
+  // Tab: 'sheet' (Spreadsheet/Cards) or 'sessions' (Multi-session link controller)
+  const [activeTab, setActiveTab] = useState<'sheet' | 'sessions'>('sheet');
   const [viewMode, setViewMode] = useState<'cards' | 'grid'>('cards');
-  const [activeTab, setActiveTab] = useState<'sheet' | 'session'>('sheet');
 
   // Sheet data
   const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [sessions, setSessions] = useState<SessionItem[]>(() => currentSession?.sessions || []);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [selectedCell, setSelectedCell] = useState<{ row: number; col: string; val: string } | null>({
-    row: 1,
-    col: 'C',
-    val: 'Roll No',
-  });
+  const [sessionFilter, setSessionFilter] = useState<string>('ALL');
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
   // Manual Add Modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [manualName, setManualName] = useState('');
   const [manualRoll, setManualRoll] = useState('');
+  const [manualSessionId, setManualSessionId] = useState<string>('');
 
-  // Session Settings State
-  const [sessionForm, setSessionForm] = useState({
-    meetingLink: currentSession?.meetingLink || 'https://meet.google.com/oorja-inauguration-2026',
-    meetingTitle: currentSession?.meetingTitle || '⚡ OORJA CLUB INAUGURATION 2026 // Keynote & Induction Session',
-    instructor: currentSession?.instructor || 'Club Oorja Executive Board & Faculty Advisor',
-    sessionActive: currentSession?.sessionActive ?? true,
-    customNotice: currentSession?.customNotice || '⚡ HIGH VOLTAGE: Welcome to CLUB OORJA! Enter your Name & Roll Number.',
-  });
-  const [savingSession, setSavingSession] = useState(false);
-  const [sessionSaveSuccess, setSessionSaveSuccess] = useState(false);
+  // Add New Session Modal
+  const [showAddSessionModal, setShowAddSessionModal] = useState(false);
+  const [newSessionTitle, setNewSessionTitle] = useState('');
+  const [newSessionTime, setNewSessionTime] = useState('');
+  const [newSessionLink, setNewSessionLink] = useState('');
+  const [newSessionSpeaker, setNewSessionSpeaker] = useState('');
 
-  // Fetch attendees
-  const fetchAttendees = async () => {
+  // Notice & Config State
+  const [customNotice, setCustomNotice] = useState(currentSession?.customNotice || '');
+  const [savingSessions, setSavingSessions] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Fetch attendees & sessions
+  const fetchAllData = async () => {
     if (!authed) return;
     setLoading(true);
     try {
@@ -82,9 +80,12 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
       if (res.ok) {
         const data = await res.json();
         setAttendees(data.attendees || []);
+        if (data.sessions && Array.isArray(data.sessions)) {
+          setSessions(data.sessions);
+        }
       }
     } catch (err) {
-      console.error('Failed to fetch attendees:', err);
+      console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
     }
@@ -92,21 +93,16 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
 
   useEffect(() => {
     if (authed) {
-      fetchAttendees();
-      const interval = setInterval(fetchAttendees, 10000);
+      fetchAllData();
+      const interval = setInterval(fetchAllData, 10000);
       return () => clearInterval(interval);
     }
   }, [authed]);
 
   useEffect(() => {
-    if (currentSession) {
-      setSessionForm({
-        meetingLink: currentSession.meetingLink || '',
-        meetingTitle: currentSession.meetingTitle,
-        instructor: currentSession.instructor,
-        sessionActive: currentSession.sessionActive,
-        customNotice: currentSession.customNotice,
-      });
+    if (currentSession?.sessions) {
+      setSessions(currentSession.sessions);
+      setCustomNotice(currentSession.customNotice);
     }
   }, [currentSession]);
 
@@ -141,6 +137,107 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
     retroSound.playClick();
     localStorage.removeItem('oorja_admin_auth');
     setAuthed(false);
+  };
+
+  // Update session field
+  const handleSessionChange = (index: number, field: keyof SessionItem, value: any) => {
+    setSessions((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  // Toggle session active
+  const handleToggleSessionActive = (index: number) => {
+    retroSound.playClick();
+    handleSessionChange(index, 'active', !sessions[index].active);
+  };
+
+  // Delete session
+  const handleDeleteSession = (index: number) => {
+    if (sessions.length <= 1) {
+      alert('You must keep at least one active session.');
+      return;
+    }
+    if (!window.confirm(`Delete "${sessions[index].title}"?`)) return;
+    retroSound.playClick();
+    setSessions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Save all sessions to backend
+  const handleSaveSessions = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    retroSound.playClick();
+    setSavingSessions(true);
+    setSaveSuccess(false);
+
+    try {
+      const res = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer oorja_auth_power_token_2026',
+        },
+        body: JSON.stringify({
+          sessions,
+          customNotice,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        onSessionUpdated({ sessions: data.sessions, customNotice: data.config.customNotice });
+        setSaveSuccess(true);
+        retroSound.playSuccess();
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Save error:', err);
+      retroSound.playError();
+    } finally {
+      setSavingSessions(false);
+    }
+  };
+
+  // Add new session handler
+  const handleAddNewSession = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSessionTitle.trim() || !newSessionLink.trim()) return;
+    retroSound.playClick();
+
+    const newId = `ses-${Date.now().toString().slice(-4)}`;
+    const newSession: SessionItem = {
+      id: newId,
+      title: newSessionTitle.trim(),
+      time: newSessionTime.trim() || 'TBD',
+      speaker: newSessionSpeaker.trim() || 'Faculty / Domain Lead',
+      meetingLink: newSessionLink.trim(),
+      active: true,
+    };
+
+    const updated = [...sessions, newSession];
+    setSessions(updated);
+    setShowAddSessionModal(false);
+    setNewSessionTitle('');
+    setNewSessionTime('');
+    setNewSessionLink('');
+    setNewSessionSpeaker('');
+
+    // Trigger save
+    setTimeout(() => {
+      fetch('/api/admin/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer oorja_auth_power_token_2026',
+        },
+        body: JSON.stringify({ sessions: updated, customNotice }),
+      }).then(() => {
+        onSessionUpdated({ sessions: updated, customNotice });
+        retroSound.playSuccess();
+      });
+    }, 100);
   };
 
   // Update attendee inline
@@ -185,7 +282,7 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
 
   // Clear all
   const handleClearSheet = async () => {
-    if (!window.confirm('⚠️ WARNING: This will clear the entire Oorja attendance sheet. Are you sure?')) return;
+    if (!window.confirm('⚠️ WARNING: This will clear the entire attendance sheet. Are you sure?')) return;
     retroSound.playClick();
     try {
       const res = await fetch('/api/attendees/clear', {
@@ -200,11 +297,14 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
     }
   };
 
-  // Add Manual Record
+  // Manual Add Student
   const handleManualAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualName.trim() || !manualRoll.trim()) return;
     retroSound.playClick();
+
+    const chosenId = manualSessionId || sessions[0]?.id;
+
     try {
       const res = await fetch('/api/attend', {
         method: 'POST',
@@ -212,6 +312,7 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
         body: JSON.stringify({
           name: manualName.trim(),
           rollNo: manualRoll.trim().toUpperCase(),
+          sessionId: chosenId,
           notes: 'Admin Manual Entry',
         }),
       });
@@ -219,7 +320,7 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
         setShowAddModal(false);
         setManualName('');
         setManualRoll('');
-        fetchAttendees();
+        fetchAllData();
         retroSound.playSuccess();
       }
     } catch (err) {
@@ -230,11 +331,12 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
   // Copy as Sheet TSV
   const handleCopyTSV = () => {
     retroSound.playClick();
-    const headers = ['Record ID', 'Roll Number', 'Student Name', 'Check-in Time', 'Status', 'Device/System', 'Notes'];
+    const headers = ['Record ID', 'Roll Number', 'Student Name', 'Session', 'Check-in Time', 'Status', 'Device/System', 'Notes'];
     const rows = filteredAttendees.map((a) => [
       a.id,
       a.rollNo,
       a.name,
+      a.sessionTitle || 'General',
       new Date(a.timestamp).toLocaleString(),
       a.status,
       a.device,
@@ -248,38 +350,6 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
     setTimeout(() => setCopyStatus(null), 3500);
   };
 
-  // Save Session Configuration
-  const handleSaveSession = async (e: React.FormEvent) => {
-    e.preventDefault();
-    retroSound.playClick();
-    setSavingSession(true);
-    setSessionSaveSuccess(false);
-
-    try {
-      const res = await fetch('/api/admin/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer oorja_auth_power_token_2026',
-        },
-        body: JSON.stringify(sessionForm),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        onSessionUpdated(data.config);
-        setSessionSaveSuccess(true);
-        retroSound.playSuccess();
-        setTimeout(() => setSessionSaveSuccess(false), 3000);
-      }
-    } catch (err) {
-      console.error('Save session error:', err);
-      retroSound.playError();
-    } finally {
-      setSavingSession(false);
-    }
-  };
-
   // Filter attendees
   const filteredAttendees = useMemo(() => {
     return attendees.filter((a) => {
@@ -288,14 +358,15 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
         a.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
         a.id.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || a.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesSession = sessionFilter === 'ALL' || a.sessionId === sessionFilter;
+      return matchesSearch && matchesStatus && matchesSession;
     });
-  }, [attendees, searchQuery, statusFilter]);
+  }, [attendees, searchQuery, statusFilter, sessionFilter]);
 
   // If not authenticated, render login prompt
   if (!authed) {
     return (
-      <div className="p-3 sm:p-6 max-w-md mx-auto my-4 sm:my-8">
+      <div className="p-3 sm:p-6 max-w-md mx-auto my-4 sm:my-8 font-sans">
         <div className="win-box p-4 bg-[#c0c0c0] shadow-2xl">
           <div className="bg-[#000080] text-white px-2.5 py-1.5 font-bold text-xs flex items-center justify-between mb-3">
             <span className="flex items-center gap-1.5">
@@ -306,7 +377,7 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
           </div>
 
           <p className="text-xs font-mono text-gray-800 mb-3">
-            Enter the authorized Administrator Passcode to manage the <strong>Oorja Inauguration Master Sheet</strong> and live meeting link.
+            Enter the authorized Administrator Passcode to manage the <strong>Oorja Inauguration Sessions</strong> and Master Attendance Sheet.
           </p>
 
           {authError && (
@@ -363,7 +434,7 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
               retroSound.playClick();
               setActiveTab('sheet');
             }}
-            className={`win-btn px-2.5 sm:px-3 py-2 text-xs font-bold flex items-center gap-1.5 shrink-0 ${
+            className={`win-btn px-3 py-2 text-xs font-bold flex items-center gap-1.5 shrink-0 ${
               activeTab === 'sheet' ? 'win-btn-active bg-[#dfdfdf]' : 'bg-[#c0c0c0]'
             }`}
           >
@@ -374,23 +445,23 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
           <button
             onClick={() => {
               retroSound.playClick();
-              setActiveTab('session');
+              setActiveTab('sessions');
             }}
-            className={`win-btn px-2.5 sm:px-3 py-2 text-xs font-bold flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'session' ? 'win-btn-active bg-[#dfdfdf]' : 'bg-[#c0c0c0]'
+            className={`win-btn px-3 py-2 text-xs font-bold flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'sessions' ? 'win-btn-active bg-[#dfdfdf]' : 'bg-[#c0c0c0]'
             }`}
           >
             <Sliders className="w-3.5 h-3.5 text-emerald-900" />
-            <span>SESSION & MEETING LINK</span>
+            <span>SESSION LINKS ({sessions.length})</span>
           </button>
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
           <button
-            onClick={fetchAttendees}
+            onClick={fetchAllData}
             disabled={loading}
             className="win-btn px-2.5 py-1.5 text-xs bg-[#c0c0c0] flex items-center gap-1"
-            title="Refresh Sheet"
+            title="Refresh"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Sync</span>
@@ -412,7 +483,7 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-mono">
             <div className="win-box p-2 bg-white flex flex-col">
-              <span className="text-[9px] text-gray-500 uppercase">TOTAL INDUCTED:</span>
+              <span className="text-[9px] text-gray-500 uppercase">TOTAL LOGGED:</span>
               <span className="text-base sm:text-lg font-bold text-blue-950 font-pixel">{attendees.length}</span>
             </div>
             <div className="win-box p-2 bg-emerald-50 flex flex-col">
@@ -428,11 +499,38 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
               </span>
             </div>
             <div className="win-box p-2 bg-blue-50 flex flex-col">
-              <span className="text-[9px] text-blue-800 uppercase">GRID STATUS:</span>
-              <span className="text-[10px] font-bold text-blue-900 truncate mt-1">
-                {sessionForm.sessionActive ? '● LIVE (OPEN)' : '○ LOCKED'}
+              <span className="text-[9px] text-blue-800 uppercase">ACTIVE SESSIONS:</span>
+              <span className="text-base sm:text-lg font-bold text-blue-900 font-pixel">
+                {sessions.filter((s) => s.active).length} / {sessions.length}
               </span>
             </div>
+          </div>
+
+          {/* Session Filter Pills (Easy Tap on Mobile!) */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs font-mono">
+            <span className="text-[10px] text-gray-600 font-bold uppercase shrink-0 mr-1">Filter:</span>
+            <button
+              onClick={() => setSessionFilter('ALL')}
+              className={`win-btn px-2.5 py-1 text-[11px] font-bold shrink-0 ${
+                sessionFilter === 'ALL' ? 'bg-[#000080] text-white' : 'bg-[#e4e4e4] text-black'
+              }`}
+            >
+              All Sessions ({attendees.length})
+            </button>
+            {sessions.map((s, idx) => {
+              const count = attendees.filter((a) => a.sessionId === s.id).length;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setSessionFilter(s.id)}
+                  className={`win-btn px-2.5 py-1 text-[11px] font-bold shrink-0 ${
+                    sessionFilter === s.id ? 'bg-[#000080] text-white' : 'bg-[#e4e4e4] text-black'
+                  }`}
+                >
+                  Session {idx + 1} ({count})
+                </button>
+              );
+            })}
           </div>
 
           {/* Search, Mobile View Switcher, and Export Bar */}
@@ -445,24 +543,22 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Roll No / Name..."
+                  placeholder="Filter Roll No / Name..."
                   className="w-full text-xs outline-none bg-transparent font-sans"
                 />
               </div>
 
-              {/* Mobile View Toggle: Cards vs Grid */}
+              {/* Mobile View Toggle */}
               <div className="flex items-center win-inset bg-white p-0.5">
                 <button
                   onClick={() => setViewMode('cards')}
                   className={`px-2 py-1 text-[10px] font-bold ${viewMode === 'cards' ? 'bg-[#000080] text-white' : 'text-gray-700'}`}
-                  title="Mobile Card View"
                 >
                   Cards
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`px-2 py-1 text-[10px] font-bold ${viewMode === 'grid' ? 'bg-[#000080] text-white' : 'text-gray-700'}`}
-                  title="Desktop Spreadsheet Grid"
                 >
                   Sheet
                 </button>
@@ -551,7 +647,6 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
                           <option value="Present">Present</option>
                           <option value="Late">Late</option>
                           <option value="Absent">Absent</option>
-                          <option value="Excused">Excused</option>
                         </select>
 
                         <button
@@ -569,6 +664,11 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
                       <span className="text-[10px] text-gray-500 font-mono">
                         {new Date(att.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
+                    </div>
+
+                    {/* Session Tag */}
+                    <div className="bg-yellow-50 px-1.5 py-0.5 border border-yellow-300 text-[10px] text-gray-700 truncate font-sans">
+                      Session: <strong>{att.sessionTitle || 'General'}</strong>
                     </div>
 
                     {/* Notes & Device */}
@@ -603,6 +703,7 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
                     <th className="w-7 border-r border-b border-gray-400 p-1 text-center font-normal text-gray-600 bg-[#dfdfdf]">#</th>
                     <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-[#000080] bg-[#dfdfdf]">ROLL NO</th>
                     <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-gray-900 bg-[#dfdfdf]">STUDENT NAME</th>
+                    <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-gray-700 bg-[#dfdfdf]">SESSION</th>
                     <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-gray-700 bg-[#dfdfdf]">TIME</th>
                     <th className="border-r border-b border-gray-400 px-2 py-1 text-center font-bold text-gray-700 bg-[#dfdfdf]">STATUS</th>
                     <th className="border-r border-b border-gray-400 px-2 py-1 text-left font-bold text-gray-700 bg-[#dfdfdf]">REMARKS / NOTES</th>
@@ -615,6 +716,9 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
                       <td className="border-r border-gray-300 p-1 text-center text-gray-500 bg-[#f4f4f4] text-[11px]">{idx + 1}</td>
                       <td className="border-r border-gray-300 px-2 py-1 font-bold text-[#000080]">{att.rollNo}</td>
                       <td className="border-r border-gray-300 px-2 py-1 font-sans">{att.name}</td>
+                      <td className="border-r border-gray-300 px-2 py-1 text-[11px] truncate max-w-[150px] font-sans">
+                        {att.sessionTitle || 'General'}
+                      </td>
                       <td className="border-r border-gray-300 px-2 py-1 text-gray-600 text-[11px] whitespace-nowrap">
                         {new Date(att.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
@@ -669,127 +773,233 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
         </div>
       )}
 
-      {/* ================= TAB 2: SESSION & MEETING LINK CONFIG ================= */}
-      {activeTab === 'session' && (
-        <div className="max-w-xl mx-auto win-box p-3 sm:p-4 bg-[#c0c0c0]">
-          <div className="bg-[#000080] text-white px-2.5 py-1.5 font-bold text-xs flex items-center justify-between mb-3">
+      {/* ================= TAB 2: MULTI-SESSION MEETING LINK CONTROLLER ================= */}
+      {activeTab === 'sessions' && (
+        <div className="space-y-3 font-mono text-xs">
+          <div className="bg-[#000080] text-white px-2.5 py-1.5 font-bold text-xs flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-yellow-300" />
-              <span>OORJA SESSION & MEETING GATE CONTROLLER</span>
+              <span>CONFIGURE MULTIPLE SESSIONS & MEETING LINKS</span>
             </span>
+            <button
+              onClick={() => {
+                retroSound.playClick();
+                setShowAddSessionModal(true);
+              }}
+              className="win-btn px-2.5 py-0.5 bg-yellow-400 text-black font-bold text-[10px] flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> Add Session
+            </button>
           </div>
 
-          {sessionSaveSuccess && (
-            <div className="mb-3 p-2 bg-emerald-100 border-2 border-emerald-600 text-emerald-900 text-xs font-mono flex items-center gap-2">
+          {saveSuccess && (
+            <div className="p-2.5 bg-emerald-100 border-2 border-emerald-600 text-emerald-900 text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>Grid updated! Live meeting link & notice are instantly active.</span>
+              <span>All sessions and links updated successfully! Student portal updated in real-time.</span>
             </div>
           )}
 
-          <form onSubmit={handleSaveSession} className="space-y-3 font-mono text-xs">
-            {/* Gate switch */}
-            <div className="win-box p-2.5 bg-white flex items-center justify-between gap-2">
-              <div>
-                <strong className="block text-black text-xs sm:text-sm uppercase">Attendance Grid Gate</strong>
-                <p className="text-[10px] text-gray-600">
-                  Toggle to open or lock attendance submission.
-                </p>
-              </div>
+          <p className="text-[11px] text-gray-700 font-sans">
+            Configure different sessions (e.g. Session 1, Session 2, Session 3). You can set a unique Google Meet / Zoom link and open/lock attendance for each session individually!
+          </p>
 
-              <button
-                type="button"
-                onClick={() => {
-                  retroSound.playClick();
-                  setSessionForm((prev) => ({ ...prev, sessionActive: !prev.sessionActive }));
-                }}
-                className={`win-btn px-3 py-2 font-bold text-xs flex items-center gap-1.5 shrink-0 ${
-                  sessionForm.sessionActive ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
-                }`}
-              >
-                {sessionForm.sessionActive ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                <span>{sessionForm.sessionActive ? 'GATE: ACTIVE' : 'GATE: LOCKED'}</span>
-              </button>
-            </div>
+          {/* Session Cards - Mobile Touch Friendly */}
+          <div className="space-y-3">
+            {sessions.map((s, idx) => {
+              const attendeeCount = attendees.filter((a) => a.sessionId === s.id).length;
+              return (
+                <div key={s.id} className="win-box p-3 bg-white border-2 border-gray-400 space-y-2">
+                  <div className="flex items-center justify-between gap-2 border-b border-gray-300 pb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 bg-[#000080] text-white flex items-center justify-center font-bold text-xs rounded-none">
+                        {idx + 1}
+                      </span>
+                      <strong className="text-sm text-[#000080] font-sans truncate">
+                        {s.title}
+                      </strong>
+                    </div>
 
-            {/* Meeting URL */}
-            <div>
-              <label className="block font-bold text-black mb-1">
-                ⚡ INAUGURATION MEETING LINK (GOOGLE MEET / ZOOM): <span className="text-red-600">*</span>
-              </label>
-              <div className="win-inset p-1.5 bg-white">
-                <input
-                  type="url"
-                  value={sessionForm.meetingLink}
-                  onChange={(e) => setSessionForm({ ...sessionForm, meetingLink: e.target.value })}
-                  placeholder="https://meet.google.com/oorja-inauguration-2026"
-                  required
-                  className="w-full px-1.5 py-1 text-xs sm:text-sm font-mono outline-none bg-transparent"
-                />
-              </div>
-            </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSessionActive(idx)}
+                        className={`win-btn px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 ${
+                          s.active ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+                        }`}
+                      >
+                        {s.active ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        <span>{s.active ? 'OPEN' : 'LOCKED'}</span>
+                      </button>
 
-            {/* Event Title */}
-            <div>
-              <label className="block font-bold text-black mb-1">
-                INAUGURATION SESSION TITLE:
-              </label>
-              <div className="win-inset p-1.5 bg-white">
-                <input
-                  type="text"
-                  value={sessionForm.meetingTitle}
-                  onChange={(e) => setSessionForm({ ...sessionForm, meetingTitle: e.target.value })}
-                  className="w-full px-1.5 py-1 text-xs font-sans outline-none bg-transparent"
-                />
-              </div>
-            </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSession(idx)}
+                        className="win-btn p-1 text-red-600 hover:bg-red-50"
+                        title="Delete Session"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
 
-            {/* Host Name */}
-            <div>
-              <label className="block font-bold text-black mb-1">
-                HOST / FACULTY ADVISOR:
-              </label>
-              <div className="win-inset p-1.5 bg-white">
-                <input
-                  type="text"
-                  value={sessionForm.instructor}
-                  onChange={(e) => setSessionForm({ ...sessionForm, instructor: e.target.value })}
-                  className="w-full px-1.5 py-1 text-xs font-sans outline-none bg-transparent"
-                />
-              </div>
-            </div>
+                  {/* Title & Time */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-600 mb-0.5">SESSION TITLE:</label>
+                      <div className="win-inset p-1 bg-white">
+                        <input
+                          type="text"
+                          value={s.title}
+                          onChange={(e) => handleSessionChange(idx, 'title', e.target.value)}
+                          className="w-full text-xs font-sans outline-none bg-transparent"
+                        />
+                      </div>
+                    </div>
 
-            {/* Scrolling Notice */}
-            <div>
-              <label className="block font-bold text-black mb-1">
-                TICKER BROADCAST MESSAGE:
-              </label>
-              <div className="win-inset p-1.5 bg-white">
-                <textarea
-                  rows={2}
-                  value={sessionForm.customNotice}
-                  onChange={(e) => setSessionForm({ ...sessionForm, customNotice: e.target.value })}
-                  className="w-full px-1.5 py-1 text-xs font-mono outline-none bg-transparent"
-                />
-              </div>
-            </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-600 mb-0.5">TIME SLOT / SCHEDULE:</label>
+                      <div className="win-inset p-1 bg-white">
+                        <input
+                          type="text"
+                          value={s.time}
+                          onChange={(e) => handleSessionChange(idx, 'time', e.target.value)}
+                          placeholder="e.g. 10:00 AM - 11:30 AM"
+                          className="w-full text-xs font-mono outline-none bg-transparent"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={savingSession}
-                className="win-btn w-full py-3 bg-[#c0c0c0] font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-yellow-100 active:scale-[0.98]"
-              >
-                <span>💾</span>
-                <span>{savingSession ? 'ENERGIZING CHANGES...' : 'SAVE & APPLY TO GRID'}</span>
-              </button>
+                  {/* Meeting Link for this session */}
+                  <div>
+                    <div className="flex justify-between items-center mb-0.5">
+                      <label className="text-[10px] font-bold text-black flex items-center gap-1">
+                        <span>🔗</span> GOOGLE MEET / ZOOM LINK FOR THIS SESSION:
+                      </label>
+                      <span className="text-[10px] text-gray-500 font-sans">
+                        Checked-in: <strong>{attendeeCount} students</strong>
+                      </span>
+                    </div>
+                    <div className="win-inset p-1.5 bg-yellow-50/60 border border-yellow-400">
+                      <input
+                        type="url"
+                        value={s.meetingLink || ''}
+                        onChange={(e) => handleSessionChange(idx, 'meetingLink', e.target.value)}
+                        placeholder="https://meet.google.com/xyz-abc"
+                        className="w-full text-xs font-mono outline-none bg-transparent text-blue-900 font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bulletin Ticker */}
+          <div className="win-box p-3 bg-white mt-3 space-y-2">
+            <label className="block font-bold text-black text-xs">
+              ⚡ LIVE BULLETIN TICKER (Shown to Students):
+            </label>
+            <div className="win-inset p-1.5 bg-white">
+              <textarea
+                rows={2}
+                value={customNotice}
+                onChange={(e) => setCustomNotice(e.target.value)}
+                className="w-full text-xs font-mono outline-none bg-transparent"
+              />
             </div>
-          </form>
+          </div>
+
+          {/* Save All Sessions Button */}
+          <div className="pt-2">
+            <button
+              onClick={handleSaveSessions}
+              disabled={savingSessions}
+              className="win-btn w-full py-3.5 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 text-black font-extrabold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 active:scale-[0.98]"
+            >
+              <span>💾</span>
+              <span>{savingSessions ? 'SAVING SESSIONS...' : 'SAVE ALL SESSION LINKS & SETTINGS'}</span>
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Manual Add Modal */}
+      {/* Modal: Add New Session */}
+      {showAddSessionModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 font-sans">
+          <div className="win-box w-full max-w-sm p-4 bg-[#c0c0c0] shadow-2xl">
+            <div className="bg-[#000080] text-white px-2 py-1 font-bold text-xs flex items-center justify-between mb-3">
+              <span>ADD NEW INAUGURATION SESSION</span>
+              <button onClick={() => setShowAddSessionModal(false)} className="text-white hover:text-red-300 font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddNewSession} className="space-y-3 font-mono text-xs">
+              <div>
+                <label className="block font-bold text-black mb-1">SESSION TITLE:</label>
+                <div className="win-inset p-1 bg-white">
+                  <input
+                    type="text"
+                    value={newSessionTitle}
+                    onChange={(e) => setNewSessionTitle(e.target.value)}
+                    required
+                    placeholder="e.g. Session 4: Open Q&A & Mentorship"
+                    className="w-full px-2 py-1 text-xs outline-none bg-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-black mb-1">TIME SLOT:</label>
+                <div className="win-inset p-1 bg-white">
+                  <input
+                    type="text"
+                    value={newSessionTime}
+                    onChange={(e) => setNewSessionTime(e.target.value)}
+                    placeholder="e.g. 06:00 PM - 07:00 PM"
+                    className="w-full px-2 py-1 text-xs outline-none bg-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-black mb-1">GOOGLE MEET / ZOOM LINK:</label>
+                <div className="win-inset p-1 bg-white">
+                  <input
+                    type="url"
+                    value={newSessionLink}
+                    onChange={(e) => setNewSessionLink(e.target.value)}
+                    required
+                    placeholder="https://meet.google.com/xyz-123"
+                    className="w-full px-2 py-1 text-xs outline-none bg-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSessionModal(false)}
+                  className="win-btn px-3 py-1 bg-[#c0c0c0]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="win-btn px-4 py-1 bg-[#c0c0c0] font-bold text-blue-900"
+                >
+                  Create Session
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Manual Add Student */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 font-sans">
           <div className="win-box w-full max-w-sm p-4 bg-[#c0c0c0] shadow-2xl">
             <div className="bg-[#000080] text-white px-2 py-1 font-bold text-xs flex items-center justify-between mb-3">
               <span>MANUAL INDUCTION ENTRY</span>
@@ -824,6 +1034,23 @@ export const AdminSpreadsheet: React.FC<AdminSpreadsheetProps> = ({
                     placeholder="e.g. BTECH/15001/23"
                     className="w-full px-2 py-1 text-xs uppercase outline-none bg-transparent font-mono"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-black mb-1">ASSIGN TO SESSION:</label>
+                <div className="win-inset p-1 bg-white">
+                  <select
+                    value={manualSessionId || sessions[0]?.id}
+                    onChange={(e) => setManualSessionId(e.target.value)}
+                    className="w-full px-1 py-1 text-xs font-mono outline-none bg-transparent"
+                  >
+                    {sessions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
